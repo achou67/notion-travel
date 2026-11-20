@@ -820,20 +820,24 @@ body[data-view="shopping"] {
 
 .offline-panel {
   max-width: 1040px;
-  margin: 20px auto 0;
-  padding: 16px 20px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
+  margin: 0 auto 24px;
+  border-top: 1px solid #decdd5;
+  color: #6b5d63;
+  font-size: 13px;
 }
 
-.offline-panel--active {
-  background: #fff0c9;
-  border: 1px solid #c99c36;
+.offline-panel summary {
+  padding: 14px 0;
+  cursor: pointer;
+}
+
+.offline-panel summary small {
+  margin-left: 10px;
+  color: #6b5d63;
+}
+
+.offline-content {
+  padding: 0 0 14px;
 }
 
 .offline-panel p {
@@ -850,9 +854,11 @@ body[data-view="shopping"] {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 12px;
 }
 
-.offline-actions button {
+.offline-actions button,
+.offline-notice button {
   border: 1px solid #c9a0b0;
   border-radius: 12px;
   padding: 10px 14px;
@@ -861,13 +867,34 @@ body[data-view="shopping"] {
   cursor: pointer;
 }
 
-.offline-actions button:disabled {
+.offline-actions button:disabled,
+.offline-notice button:disabled {
   opacity: 0.6;
   cursor: wait;
 }
 
+.offline-notice {
+  max-width: 1040px;
+  margin: 12px auto 0;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-radius: 10px;
+  background: #fff0c9;
+  color: #624a17;
+  font-size: 12px;
+}
+
+.offline-notice button {
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
 @media (max-width: 1080px) {
-  .offline-panel {
+  .offline-panel,
+  .offline-notice {
     margin-left: 20px;
     margin-right: 20px;
   }

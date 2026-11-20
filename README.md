@@ -216,11 +216,58 @@ Database ID 就是：
 - 新增或勾選商品：直接編輯 Notion 的 **購買清單**
 - 網站重新整理時會讀取最新資料
 
+## 已經部署的人，如何更新網站功能
+
+這一節適合已經完成部署、想取得新版功能的人。只要更新自己 GitHub 裡的程式碼，Netlify 就會自動重新部署；原本的網站網址、Notion 資料與 Netlify 環境變數都可以沿用，不需要重新建立網站。
+
+請使用電腦操作，登入自己的 GitHub，開啟當初部署時建立的專案，名稱通常是 `notion-travel`。左上角應顯示 **自己的帳號／專案名稱**，不要在原作者的專案頁面上傳。
+
+### 有看到「Sync fork」按鈕
+
+1. 在自己的 GitHub 專案頁面，確認左上方分支是 **main**。
+2. 按 **Sync fork → Update branch**。
+3. 更新完成後，依下方「確認網站更新成功」檢查 Netlify。
+
+如果 GitHub 顯示合併衝突，先不要強制覆蓋，請找熟悉程式的人協助。參考：[GitHub 同步 Fork 說明](https://docs.github.com/en/pull-requests/how-tos/work-with-forks/syncing-a-fork)。
+
+### 沒有「Sync fork」按鈕：下載後上傳更新
+
+當初使用 **Deploy to Netlify** 按鈕的人，可能建立的是獨立副本，沒有 Sync fork 是正常的。目前的離線功能與版面更新，可以直接用以下方式更新 `frontend` 與 `netlify` 兩個資料夾。
+
+> [!IMPORTANT]
+> 這個方式適合沒有自行客製程式的使用者。如果你曾修改畫面或功能，先不要直接覆蓋，以免蓋掉自己的修改。未來版本若要求刪除舊檔案或更新其他設定，請另外依照該版本的更新說明操作。
+
+1. 按 **[下載最新版 ZIP](https://github.com/roy55688/notion-travel/archive/refs/heads/main.zip)**。
+2. 將下載的 ZIP **解壓縮**。Windows 可以在 ZIP 上按右鍵，選擇 **解壓縮全部**。
+3. 開啟解壓縮後的 `notion-travel-main` 資料夾，找到 **frontend** 和 **netlify** 兩個資料夾。
+4. 回到 **自己 GitHub 的專案首頁**，確認分支是 **main**，且目前檔案列表可以看到 `README.md`、`frontend` 與 `netlify`。
+5. 按檔案列表右上方的 **Add file → Upload files**。
+6. 把解壓縮得到的 **frontend** 和 **netlify** 兩個資料夾，一起拖到上傳區域，等待全部檔案上傳完成。
+7. 在下方的提交說明填入「更新旅遊網站功能」。
+8. 選擇 **Commit directly to the main branch**，再按 **Commit changes**。
+
+> [!CAUTION]
+> 請拖入 `frontend` 和 `netlify` 兩個資料夾本身。不要上傳 ZIP，也不要拖入外層的 `notion-travel-main` 資料夾，否則新版會被放在錯誤的位置。
+
+不需要上傳 `.env`、填入 Token，或修改 Netlify 的環境變數。參考：[GitHub 網頁上傳檔案與資料夾](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository)。
+
+### 確認網站更新成功
+
+1. 登入 Netlify，開啟原本的網站專案。
+2. 進入 **Deploys**，通常會自動出現一筆新的部署；等待顯示 **Published** 或部署成功。
+3. 開啟原本的網站網址並重新整理。
+4. 滑到頁面最下方，確認能看到 **離線使用**；展開後可以看到 **儲存供離線使用** 或 **更新離線版本**。
+5. 如果更新後仍要使用離線功能，請在實際帶出門的手機上重新保存離線版本。
+
+如果 GitHub 顯示沒有檔案變更，可能已經是最新版本，不一定會產生新部署。若 Netlify 顯示部署失敗或等待核准，請保留畫面上的錯誤訊息，交由網站維護者協助確認。
+
+只在 Netlify 按重新部署，會重新建置自己 GitHub 目前的版本，不會自動把原作者的新程式碼同步過來。參考：[Netlify Git 自動部署](https://docs.netlify.com/deploy/create-deploys/#deploy-with-git)。
+
 ## 常見問題
 
 ### 出發前保存離線版本
 
-1. 使用有網路的一般瀏覽模式開啟網站，按上方的 **儲存供離線使用**。
+1. 使用有網路的一般瀏覽模式開啟網站，滑到頁面最下方，展開 **離線使用**，再按 **儲存供離線使用**。
 2. 保持頁面開啟，等待顯示 **離線版本已保存** 及保存時間。可選擇將網站加入手機主畫面，方便再次開啟。
 3. 開啟飛航模式，再重新開啟網站，確認可以切換日期、展開筆記及查看圖片與購物清單。
 4. Notion 內容變更後，在有網路時按 **更新離線版本**，完成後才會取代先前保存的內容。下載失敗會保留上一份完整版本。

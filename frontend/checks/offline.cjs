@@ -66,10 +66,23 @@ async function check() {
     browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     page = await context.newPage();
+    await page.emulateMedia({ reducedMotion: "reduce" });
     page.on("pageerror", error => console.error("Browser error:", error.message));
     page.setDefaultTimeout(15000);
     await page.goto(origin);
     await page.getByRole("button", { name: "Trip a v1", exact: true }).waitFor();
+    const openOffline = async () => {
+      const panel = page.locator("details.offline-panel");
+      if (!await panel.evaluate(element => element.open)) await panel.locator("summary").click();
+    };
+    assert.equal(await page.locator("details.offline-panel").evaluate(element => element.open), false);
+    const mainBounds = await page.locator("main").boundingBox();
+    const panelBounds = await page.locator("details.offline-panel").boundingBox();
+    assert.ok(panelBounds.y >= mainBounds.y + mainBounds.height, "Offline controls must stay below the main content");
+    assert.ok(panelBounds.height < 65, "Collapsed controls must occupy only a small row");
+    assert.equal(await page.getByRole("button", { name: "儲存供離線使用", exact: true }).isVisible(), false);
+    await page.screenshot({ path: path.join(require("node:os").tmpdir(), "notion-travel-collapsed.png"), fullPage: true });
+    await openOffline();
     assert.equal(requests.some(url => url.includes("/page?")), false, "Normal browsing must keep notes lazy");
     await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
     workerVersion = 1;
@@ -129,6 +142,7 @@ async function check() {
 
     failApi = false;
     failNote = true;
+    await openOffline();
     await page.getByRole("button", { name: "更新離線版本", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "保存失敗" }).waitFor({ timeout: 45000 });
     assert.equal((await readSaved()).savedAt, first.savedAt);
@@ -166,12 +180,13 @@ async function check() {
     await page.waitForFunction(() => document.querySelector(".content-image")?.naturalWidth > 0);
     await page.getByRole("button", { name: /購物清單/ }).click();
     await page.getByText(/購買清單尚未啟用/).waitFor();
+    await openOffline();
     await page.getByRole("button", { name: "清除離線資料", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "尚未保存離線版本" }).waitFor();
     assert.equal(await readSaved(), null);
     assert.equal(await page.evaluate(async () => (await caches.keys()).some(name => name.startsWith("notion-travel-download-"))), false);
     await page.goto(origin);
-    await page.getByText(/此裝置尚未保存離線版本/).waitFor();
+    await page.getByRole("complementary", { name: "資料連線狀態" }).getByText(/此裝置尚未保存離線版本/).waitFor();
     assert.equal(await page.getByRole("button", { name: "Trip a v2", exact: true }).count(), 0);
     console.log("PASS: worker upgrades, cold offline start, all dates/notes, cross-origin images, shopping, online freshness, explicit HTTP-error fallback, partial/image/quota failure recovery, optional shopping and clearing");
   } catch (error) {
