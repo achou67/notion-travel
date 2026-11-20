@@ -4,7 +4,7 @@ const ALL_STORE_TYPES = "全部商店類型";
 
 async function fetchShoppingItems() {
   const response = await fetch(`/.netlify/functions/shopping?refresh=${Date.now()}`, {
-    cache: "no-store"
+    cache: "no-store", signal: AbortSignal.timeout(30000)
   });
   if (response.status === 204) return null;
   if (!response.ok) throw new Error(`購物清單 API 回傳 ${response.status}`);
@@ -14,7 +14,7 @@ async function fetchShoppingItems() {
   return data;
 }
 
-function ShoppingPage({ onShowTrips }) {
+function ShoppingPage({ onShowTrips, snapshot = null, onLoadFailure }) {
   const [items, setItems] = useState([]);
   const [selectedStoreType, setSelectedStoreType] = useState(ALL_STORE_TYPES);
   const [expandedItemId, setExpandedItemId] = useState("");
@@ -25,7 +25,7 @@ function ShoppingPage({ onShowTrips }) {
   useEffect(() => {
     let active = true;
 
-    fetchShoppingItems()
+    (snapshot ? Promise.resolve(snapshot.shopping) : fetchShoppingItems())
       .then(data => {
         if (!active) return;
         setConfigured(data !== null);
@@ -35,6 +35,7 @@ function ShoppingPage({ onShowTrips }) {
         if (!active) return;
         console.error(error);
         setLoadError("購物清單載入失敗，請稍後再試");
+        onLoadFailure?.(error);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -43,7 +44,7 @@ function ShoppingPage({ onShowTrips }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [snapshot, onLoadFailure]);
 
   async function refreshShoppingItems() {
     setLoading(true);
@@ -63,6 +64,7 @@ function ShoppingPage({ onShowTrips }) {
     } catch (error) {
       console.error(error);
       setLoadError("購物清單載入失敗，請稍後再試");
+      onLoadFailure?.(error);
     } finally {
       setLoading(false);
     }
@@ -115,7 +117,7 @@ function ShoppingPage({ onShowTrips }) {
           type="button"
           className="refresh-button"
           onClick={refreshShoppingItems}
-          disabled={loading}
+          disabled={loading || Boolean(snapshot)}
         >
           <span className={loading ? "refresh-icon refresh-icon--spinning" : "refresh-icon"}>↻</span>
           {loading ? "更新中" : "更新資料"}

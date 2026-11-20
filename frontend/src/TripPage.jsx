@@ -35,7 +35,7 @@ function TicketReservation({ status, reservationTime }) {
   );
 }
 
-function TripPage({ onShowShopping }) {
+function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
   const [items, setItems] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
@@ -73,31 +73,37 @@ function TripPage({ onShowShopping }) {
   }, [previewImage]);
 
   useEffect(() => {
+    let active = true;
     async function loadTrips() {
       try {
-        const res = await fetch(`/.netlify/functions/notion?refresh=${Date.now()}`, {
-          cache: "no-store"
-        });
-        if (!res.ok) throw new Error(`行程 API 回傳 ${res.status}`);
-
-        const data = await res.json();
+        let data = snapshot?.trips;
+        if (!snapshot) {
+          const res = await fetch(`/.netlify/functions/notion?refresh=${Date.now()}`, {
+            cache: "no-store", signal: AbortSignal.timeout(30000)
+          });
+          if (!res.ok) throw new Error(`行程 API 回傳 ${res.status}`);
+          data = await res.json();
+        }
         if (!Array.isArray(data)) throw new Error("行程 API 格式不正確");
-
+        if (!active) return;
         setItems(data);
 
         const dates = [...new Set(data.map(x => x?.date || EMPTY_DATE_LABEL))].sort();
         setSelectedDate(getInitialTripDate(dates, window.location.pathname));
       } catch (error) {
+        if (!active) return;
         console.error(error);
         setItems([]);
         setLoadError("行程載入失敗，請稍後再試");
+        onLoadFailure?.(error);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
 
     loadTrips();
-  }, []);
+    return () => { active = false; };
+  }, [snapshot, onLoadFailure]);
 
   async function openItem(item) {
     const request = ++detailRequest.current;
@@ -112,6 +118,12 @@ function TripPage({ onShowShopping }) {
 
     if (!item?.id) {
       setPageContent([]);
+      setDetailLoading(false);
+      return;
+    }
+
+    if (snapshot) {
+      setPageContent(snapshot.notes[item.id] || []);
       setDetailLoading(false);
       return;
     }
@@ -131,7 +143,7 @@ function TripPage({ onShowShopping }) {
         id: item.id,
         edited: item.lastEditedTime || ""
       });
-      const res = await fetch(`/.netlify/functions/page?${params}`);
+      const res = await fetch(`/.netlify/functions/page?${params}`, { signal: AbortSignal.timeout(30000) });
       if (!res.ok) throw new Error(`筆記 API 回傳 ${res.status}`);
 
       const data = await res.json();
@@ -147,6 +159,7 @@ function TripPage({ onShowShopping }) {
       console.error(error);
       if (request === detailRequest.current) {
         setPageContent([{ type: "paragraph", text: "內容載入失敗" }]);
+        onLoadFailure?.(error);
       }
     } finally {
       if (request === detailRequest.current) setDetailLoading(false);

@@ -1,3 +1,5 @@
+import { fetchNotionResults } from "../lib/notion.js";
+
 function getPlainText(richText) {
   if (!Array.isArray(richText)) return "";
   return richText.map(text => text?.plain_text || "").join("");
@@ -39,7 +41,7 @@ export default async () => {
       throw new Error("Notion 購物清單環境變數尚未設定");
     }
 
-    const response = await fetch(
+    const results = await fetchNotionResults(
       `https://api.notion.com/v1/databases/${databaseId}/query`,
       {
         method: "POST",
@@ -51,12 +53,6 @@ export default async () => {
       }
     );
 
-    if (!response.ok) {
-      throw new Error(`Notion API 回傳 ${response.status}`);
-    }
-
-    const data = await response.json();
-    const results = Array.isArray(data?.results) ? data.results : [];
     const items = results
       .map(transformShoppingItem)
       .filter(isPendingShoppingItem);

@@ -1,3 +1,5 @@
+import { fetchNotionResults } from "../lib/notion.js";
+
 function getPlainText(richText = []) {
   return richText.map(t => t.plain_text || "").join("");
 }
@@ -71,21 +73,15 @@ export async function handler(event) {
     return errorResponse(404, "找不到行程內容");
   }
 
-  const response = await fetch(
-    `https://api.notion.com/v1/blocks/${pageId}/children`,
-    {
-      method: "GET",
-      headers
-    }
-  );
-
-  if (!response.ok) {
+  let blocks;
+  try {
+    blocks = await fetchNotionResults(`https://api.notion.com/v1/blocks/${pageId}/children`, {
+      method: "GET", headers
+    });
+  } catch {
     return errorResponse(502, "行程內容載入失敗");
   }
-
-  const data = await response.json();
-
-  const content = data.results
+  const content = blocks
     .map(convertBlock)
     .filter(block => {
       if (block.type === "paragraph") return block.text;
@@ -96,8 +92,10 @@ export async function handler(event) {
   return {
     statusCode: 200,
     headers: {
-      "Netlify-CDN-Cache-Control": "public, durable, max-age=300, stale-while-revalidate=60",
-      "Netlify-Vary": "query=id|edited",
+      "Netlify-CDN-Cache-Control": event.queryStringParameters?.download
+        ? "no-store"
+        : "public, durable, max-age=300, stale-while-revalidate=60",
+      "Netlify-Vary": "query=id|edited|download",
       "Cache-Control": "public, max-age=0, must-revalidate"
     },
     body: JSON.stringify({

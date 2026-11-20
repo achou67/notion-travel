@@ -817,3 +817,58 @@ body[data-view="shopping"] {
     radial-gradient(circle at top right, #fff0ae 0, transparent 32%),
     linear-gradient(180deg, #fdf9ff 0%, #fffdf1 100%);
 }
+
+.offline-panel {
+  max-width: 1040px;
+  margin: 20px auto 0;
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.offline-panel--active {
+  background: #fff0c9;
+  border: 1px solid #c99c36;
+}
+
+.offline-panel p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.offline-panel p:empty {
+  display: none;
+}
+
+.offline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.offline-actions button {
+  border: 1px solid #c9a0b0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: #fff8fb;
+  color: #5f3b4c;
+  cursor: pointer;
+}
+
+.offline-actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+@media (max-width: 1080px) {
+  .offline-panel {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+}

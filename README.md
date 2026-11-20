@@ -218,6 +218,22 @@ Database ID 就是：
 
 ## 常見問題
 
+### 出發前保存離線版本
+
+1. 使用有網路的一般瀏覽模式開啟網站，按上方的 **儲存供離線使用**。
+2. 保持頁面開啟，等待顯示 **離線版本已保存** 及保存時間。可選擇將網站加入手機主畫面，方便再次開啟。
+3. 開啟飛航模式，再重新開啟網站，確認可以切換日期、展開筆記及查看圖片與購物清單。
+4. Notion 內容變更後，在有網路時按 **更新離線版本**，完成後才會取代先前保存的內容。下載失敗會保留上一份完整版本。
+5. 不需要保存時，按 **清除離線資料**。這只清除目前裝置的下載內容，不會修改 Notion。
+
+更新或清除離線版本後，其他已開啟的網站分頁請重新整理，避免繼續顯示先前版本。
+
+連線時仍會優先查詢線上資料，不會因為已有離線版本就跳過查詢。斷網且已有下載時，網站會顯示離線版本及保存時間；如果 API 發生錯誤，則提供 **查看已保存版本** 與 **重試線上資料**。網路恢復時會重新查詢。
+
+離線版本包含所有日期的行程、網站支援的筆記段落與圖片，以及已啟用的購物清單；不包含網站原本不支援的 Notion 區塊、外部地圖、導航或其他連結內容，也不支援離線編輯與回寫 Notion。圖片必須下載成功才能顯示保存完成。
+
+下載只保存在目前裝置、瀏覽器及網站網址中。請在實際要帶出門的裝置下載；無痕模式、清除網站資料或瀏覽器回收儲存空間，都可能讓下載失效。Notion 已刪除的內容仍可能存在先前下載版本中，請更新或清除離線資料。
+
 ### 網站顯示讀取失敗或沒有行程
 
 依序檢查：
@@ -376,8 +392,10 @@ Netlify Dev 會讀取根目錄的 `.env`，並同時啟動前端與 Functions。
 npm test --prefix frontend
 npm run lint --prefix frontend
 npm run build --prefix frontend
-node --test --test-isolation=none netlify/tests/notion.test.js netlify/tests/page.test.js netlify/tests/shopping.test.js
+node --test --test-isolation=none netlify/tests/*.test.js
 ```
+
+離線功能的瀏覽器回歸測試位於 `frontend/checks/offline.cjs`，沿用 `frontend/checks/tripAccordion.cjs` 的 Playwright 執行方式。先完成正式建置，並在測試環境提供 Playwright，再執行 `node frontend/checks/offline.cjs`；測試會自行啟動本機模擬服務，不需要 Notion Token，也不會存取真實行程資料。
 
 </details>
 

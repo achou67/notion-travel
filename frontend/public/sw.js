@@ -1,4 +1,4 @@
-const CACHE_NAME = "notion-travel-shell-v1";
+const CACHE_NAME = "notion-travel-shell-v2";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
@@ -18,7 +18,8 @@ self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        keys.filter(key => key.startsWith("notion-travel-shell-") && key !== CACHE_NAME)
+          .map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())
   );
@@ -29,6 +30,15 @@ self.addEventListener("fetch", event => {
   const url = new URL(request.url);
 
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
+
+  if (url.pathname.startsWith("/__offline__/image/")) {
+    const cacheName = url.pathname.split("/")[3];
+    event.respondWith((async () => {
+      if (!cacheName.startsWith("notion-travel-download-")) return Response.error();
+      return (await (await caches.open(cacheName)).match(request)) || Response.error();
+    })());
+    return;
+  }
 
   if (url.pathname.startsWith("/.netlify/functions/")) {
     event.respondWith(fetch(request, { cache: "no-store" }));
@@ -43,7 +53,7 @@ self.addEventListener("fetch", event => {
           caches.open(CACHE_NAME).then(cache => cache.put("/", copy));
           return response;
         })
-        .catch(() => caches.match("/"))
+        .catch(() => savedResource("/"))
     );
     return;
   }
@@ -57,6 +67,16 @@ self.addEventListener("fetch", event => {
         }
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(() => savedResource(request))
   );
 });
+
+async function savedResource(request) {
+  const pointer = await (await caches.open("notion-travel-offline-v1")).match("/__offline__/snapshot");
+  if (pointer) {
+    const snapshot = await pointer.json();
+    const saved = await (await caches.open(snapshot.cacheName)).match(request);
+    if (saved) return saved;
+  }
+  return (await (await caches.open(CACHE_NAME)).match(request)) || Response.error();
+}
