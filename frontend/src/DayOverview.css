@@ -1,0 +1,125 @@
+.day-overview {
+  padding: 16px;
+  margin: 0 0 18px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid #e0e9ed;
+  border-radius: 20px;
+}
+
+.day-overview h2 {
+  margin: 0 0 12px;
+  font-size: 1.125rem;
+}
+
+.day-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 14px;
+}
+
+.day-outline {
+  max-height: 280px;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 2px 6px 2px 2px;
+}
+
+.day-outline li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.day-outline a {
+  display: block;
+  padding: 4px 0;
+  color: #283e49;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.day-outline a:hover {
+  text-decoration: underline;
+}
+
+.day-outline a small {
+  display: block;
+  color: #51656e;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-stop-number,
+.day-map-pin {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  height: 28px;
+  border-radius: 14px;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.day-stop-number {
+  background: #eef1f2;
+  color: #4c626d;
+}
+
+.day-stop-number--mapped,
+.day-map-pin {
+  color: #fff;
+  background: #28596e;
+}
+
+.day-map-pin {
+  border: 2px solid #fff;
+  box-shadow: 0 2px 7px #132f4080;
+}
+
+.day-map {
+  height: 248px;
+  border-radius: 12px;
+  background: #e7eef0;
+  isolation: isolate;
+}
+
+.day-map .leaflet-popup-content a {
+  display: block;
+}
+
+.day-map-panel p {
+  margin: 7px 0 0;
+  color: #445a64;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 760px) {
+  .day-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .day-outline {
+    max-height: 175px;
+  }
+
+  .day-map {
+    height: 222px;
+  }
+}
+
+.day-directions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 8px;
+}
+
+.day-directions a {
+  color: #28596e;
+  font-size: 0.85rem;
+  font-weight: 700;
+}

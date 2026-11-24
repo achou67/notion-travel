@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import DayOverview from "./DayOverview.jsx";
 import { cachePage, getCachedPage } from "./pageCache.js";
 import {
   EMPTY_DATE_LABEL,
@@ -208,10 +209,10 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
     }
   }
 
-  const grouped = groupByDate(items);
+  const grouped = useMemo(() => groupByDate(items), [items]);
   const dates = Object.keys(grouped).sort();
-  const dayItems = [...(grouped[selectedDate] || [])]
-    .sort((a, b) => (a?.order ?? 9999) - (b?.order ?? 9999));
+  const dayItems = useMemo(() => [...(grouped[selectedDate] || [])]
+    .sort((a, b) => (a?.order ?? 9999) - (b?.order ?? 9999)), [grouped, selectedDate]);
 
   const detailContent = selectedItem && (
     <>
@@ -315,6 +316,8 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
           </button>
         ))}
       </nav>
+
+      {!loadError && dayItems.length > 0 && <DayOverview items={dayItems} />}
 
       <section className="content">
         <div className="list">
