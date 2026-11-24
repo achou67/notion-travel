@@ -79,19 +79,6 @@ function TripMetadata({ item }) {
 }
 
 function BackToTop({ headingRef }) {
-  const [visible, setVisible] = useState(() => window.scrollY > 240);
-
-  useEffect(() => {
-    function updateVisibility() {
-      setVisible(window.scrollY > 240);
-    }
-
-    window.addEventListener("scroll", updateVisibility, { passive: true });
-    return () => window.removeEventListener("scroll", updateVisibility);
-  }, []);
-
-  if (!visible) return null;
-
   return createPortal(
     <button
       type="button"
