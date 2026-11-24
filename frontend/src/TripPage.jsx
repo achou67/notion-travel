@@ -38,20 +38,9 @@ function TripTag({ tag }) {
   return <span className="tag" style={style}>{label}</span>;
 }
 
-function getMapUrl({ mapUrl, name, tag }) {
-  const savedUrl = mapUrl?.trim();
-  if (savedUrl && /^https?:\/\//i.test(savedUrl)) return savedUrl;
-
-  if (!["食物", "景點"].includes(getTagLabel(tag))) return "";
-  const query = name?.replace(/^\s*(?:(?:早餐|早午餐|午餐|下午茶|晚餐|宵夜)(?:備案)?|備案|目標)\s*[:：]\s*/, "").trim();
-  if (!query || query === "未命名行程") return "";
-
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-}
-
 function TripMapTag({ item }) {
-  const href = getMapUrl(item);
-  if (!href) return null;
+  const href = item.mapUrl?.trim();
+  if (!href || !/^https?:\/\//i.test(href)) return null;
 
   return (
     <a
