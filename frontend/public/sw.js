@@ -40,7 +40,8 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  if (url.pathname.startsWith("/.netlify/functions/")) {
+  if (url.pathname.startsWith("/.netlify/identity/") ||
+      url.pathname.startsWith("/.netlify/functions/")) {
     event.respondWith(fetch(request, { cache: "no-store" }));
     return;
   }

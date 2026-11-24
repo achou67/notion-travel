@@ -102,7 +102,7 @@ function BackToTop({ headingRef }) {
   );
 }
 
-function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
+function TripPage({ onShowShopping, onShowExpenses, snapshot = null, onLoadFailure }) {
   const [items, setItems] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
@@ -304,6 +304,9 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
           <p className="subtitle">從 Notion 同步，手機友善查看</p>
         </div>
         <div className="hero-actions">
+          <button type="button" className="view-switch" onClick={onShowExpenses}>
+            💴 記帳／分帳
+          </button>
           <button type="button" className="view-switch" onClick={onShowShopping}>
             🛍️ 購物清單
           </button>

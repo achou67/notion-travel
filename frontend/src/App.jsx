@@ -1,12 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import "./App.css";
 import ShoppingPage from "./ShoppingPage.jsx";
 import TripPage from "./TripPage.jsx";
 import { getView } from "./viewRoute.js";
 import { clearSnapshot, readSnapshot, saveSnapshot } from "./offline.js";
 
+const ExpensesPage = lazy(() => import("./ExpensesPage.jsx"));
+
+function currentView() {
+  const hash = new URLSearchParams(window.location.hash.slice(1));
+  return ["invite_token", "recovery_token"].some(key => hash.has(key))
+    ? "expenses"
+    : getView(window.location.pathname);
+}
+
 function App() {
-  const [view, setView] = useState(() => getView(window.location.pathname));
+  const [view, setView] = useState(currentView);
   const [saved, setSaved] = useState(null);
   const [snapshot, setSnapshot] = useState(null);
   const [failed, setFailed] = useState(false);
@@ -89,7 +98,7 @@ function App() {
 
   useEffect(() => {
     function handlePopState() {
-      setView(getView(window.location.pathname));
+      setView(currentView());
     }
 
     window.addEventListener("popstate", handlePopState);
@@ -97,10 +106,18 @@ function App() {
   }, []);
 
   function navigate(nextView) {
-    const path = nextView === "shopping" ? "/shopping" : "/";
+    const path = { shopping: "/shopping", expenses: "/expenses" }[nextView] ?? "/";
     window.history.pushState({}, "", path);
     setView(nextView);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  if (view === "expenses") {
+    return (
+      <Suspense fallback={<main className="page" role="status">正在載入分帳…</main>}>
+        <ExpensesPage onShowTrips={() => navigate("trips")} />
+      </Suspense>
+    );
   }
 
   const pageKey = `${view}-${revision}-${snapshot?.savedAt || "online"}`;
@@ -115,7 +132,7 @@ function App() {
       {view === "shopping" ? (
         <ShoppingPage key={pageKey} snapshot={snapshot} onLoadFailure={handleLoadFailure} onShowTrips={() => navigate("trips")} />
       ) : (
-        <TripPage key={pageKey} snapshot={snapshot} onLoadFailure={handleLoadFailure} onShowShopping={() => navigate("shopping")} />
+        <TripPage key={pageKey} snapshot={snapshot} onLoadFailure={handleLoadFailure} onShowShopping={() => navigate("shopping")} onShowExpenses={() => navigate("expenses")} />
       )}
       <details className="offline-panel">
         <summary>離線使用{saved && <small>已保存</small>}</summary>
