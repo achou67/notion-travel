@@ -56,18 +56,21 @@ function TripMapTag({ item }) {
   );
 }
 
-function TicketReservation({ status, reservationTime }) {
+function TripMetadata({ item }) {
+  const { reservationTime, tag, ticketStatus } = item;
+
   return (
     <>
-      {status && (
-        <span className={`ticket-status ticket-status--${getTicketStatusTone(status)}`}>
-          🎟️ {status}
-        </span>
-      )}
-
       {reservationTime && (
         <span className="reservation-time">
           🕒 {reservationTime}
+        </span>
+      )}
+      <TripMapTag item={item} />
+      <TripTag tag={tag} />
+      {ticketStatus && (
+        <span className={`ticket-status ticket-status--${getTicketStatusTone(ticketStatus)}`}>
+          🎟️ {ticketStatus}
         </span>
       )}
     </>
@@ -217,12 +220,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
           <p className="detail-date">{formatTripDate(getTripDay(selectedItem.date))}</p>
           <h2>{selectedItem.name || "未命名行程"}</h2>
           <div className="detail-meta">
-            <TripTag tag={selectedItem.tag} />
-            <TripMapTag item={selectedItem} />
-            <TicketReservation
-              status={selectedItem.ticketStatus}
-              reservationTime={selectedItem.reservationTime}
-            />
+            <TripMetadata item={selectedItem} />
           </div>
         </div>
       )}
@@ -338,12 +336,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
                   <div className="card-title" id={`trip-title-${item.id}`}>{item.name || "未命名行程"}</div>
 
                   <div className="card-meta">
-                    <TripTag tag={item.tag} />
-                    <TicketReservation
-                      status={item.ticketStatus}
-                      reservationTime={item.reservationTime}
-                    />
-                    <TripMapTag item={item} />
+                    <TripMetadata item={item} />
                   </div>
                 </div>
 
