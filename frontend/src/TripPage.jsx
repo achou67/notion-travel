@@ -78,6 +78,43 @@ function TripMetadata({ item }) {
   );
 }
 
+function BackToTop({ headingRef }) {
+  const [visible, setVisible] = useState(() => window.scrollY > 240);
+
+  useEffect(() => {
+    function updateVisibility() {
+      setVisible(window.scrollY > 240);
+    }
+
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+    return () => window.removeEventListener("scroll", updateVisibility);
+  }, []);
+
+  if (!visible) return null;
+
+  return createPortal(
+    <button
+      type="button"
+      className="view-switch"
+      style={{
+        position: "fixed",
+        right: "max(16px, env(safe-area-inset-right))",
+        bottom: "max(16px, env(safe-area-inset-bottom))",
+        zIndex: 10,
+        minHeight: 44
+      }}
+      onClick={() => {
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        headingRef.current?.focus({ preventScroll: true });
+        window.scrollTo({ top: 0, behavior: reduceMotion ? "instant" : "smooth" });
+      }}
+    >
+      <span aria-hidden="true">↑</span> 回到頂端
+    </button>,
+    document.body
+  );
+}
+
 function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
   const [items, setItems] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
@@ -89,6 +126,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
   const [loadError, setLoadError] = useState("");
   const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 760px)").matches);
   const detailRequest = useRef(0);
+  const headingRef = useRef(null);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 760px)");
@@ -275,7 +313,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
       <header className="hero">
         <div>
           <p className="eyebrow">Travel Planner</p>
-          <h1>我的旅行行程</h1>
+          <h1 ref={headingRef} tabIndex={-1}>我的旅行行程</h1>
           <p className="subtitle">從 Notion 同步，手機友善查看</p>
         </div>
         <div className="hero-actions">
@@ -383,6 +421,8 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
           {detailContent}
         </aside>}
       </section>
+
+      {!previewImage && <BackToTop headingRef={headingRef} />}
 
       {previewImage && createPortal(
         <div className="image-modal" onClick={() => setPreviewImage(null)}>
