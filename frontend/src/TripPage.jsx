@@ -300,7 +300,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
       <header className="hero">
         <div>
           <p className="eyebrow">Travel Planner</p>
-          <h1 ref={headingRef} tabIndex={-1}>我的旅行行程</h1>
+          <h1 ref={headingRef} tabIndex={-1}>2027 野澤滑雪</h1>
           <p className="subtitle">從 Notion 同步，手機友善查看</p>
         </div>
         <div className="hero-actions">
