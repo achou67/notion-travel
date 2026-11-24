@@ -8,9 +8,13 @@ import {
   getTicketStatusTone
 } from "./tripDisplay.js";
 
+function getTripDay(date) {
+  return date?.match(/^(\d{4}-\d{2}-\d{2})(?:T|$)/)?.[1] ?? EMPTY_DATE_LABEL;
+}
+
 function groupByDate(items) {
   return items.reduce((groups, item) => {
-    const date = item?.date || EMPTY_DATE_LABEL;
+    const date = getTripDay(item?.date);
     if (!groups[date]) groups[date] = [];
     groups[date].push(item);
     return groups;
@@ -88,7 +92,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
         if (!active) return;
         setItems(data);
 
-        const dates = [...new Set(data.map(x => x?.date || EMPTY_DATE_LABEL))].sort();
+        const dates = Object.keys(groupByDate(data)).sort();
         setSelectedDate(getInitialTripDate(dates, window.location.pathname));
       } catch (error) {
         if (!active) return;
@@ -175,7 +179,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
     <>
       {!isMobile && (
         <div className="detail-header">
-          <p className="detail-date">{formatTripDate(selectedItem.date)}</p>
+          <p className="detail-date">{formatTripDate(getTripDay(selectedItem.date))}</p>
           <h2>{selectedItem.name || "未命名行程"}</h2>
           <div className="detail-meta">
             {selectedItem.tag && <span className="tag">{selectedItem.tag}</span>}
