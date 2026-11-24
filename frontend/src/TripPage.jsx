@@ -191,9 +191,13 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
         </div>
       )}
 
+      {selectedItem.annotation?.trim() && (
+        <div className="paragraph" style={{ whiteSpace: "pre-wrap" }}>{selectedItem.annotation}</div>
+      )}
+
       {detailLoading && <p className="note" role="status">筆記載入中...</p>}
 
-      {!detailLoading && pageContent.length === 0 && (
+      {!detailLoading && !selectedItem.annotation?.trim() && pageContent.length === 0 && (
         <p className="note">這個項目目前沒有筆記內容</p>
       )}
 
@@ -296,9 +300,6 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
               <div className="card-summary">
                 <div className="card-main">
                   <div className="card-title" id={`trip-title-${item.id}`}>{item.name || "未命名行程"}</div>
-                  {item.annotation && (
-                    <div className="card-annotation">{item.annotation}</div>
-                  )}
 
                   <div className="card-meta">
                     {item.tag && <span className="tag">{item.tag}</span>}
