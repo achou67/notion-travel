@@ -13,6 +13,7 @@ export function transformNotionItem(item = {}) {
     lastEditedTime: item?.last_edited_time ?? "",
     name: getPlainText(props.Name?.title) || "未命名行程",
     date: props.Time?.date?.start ?? "",
+    dateEnd: props.Time?.date?.end ?? null,
     tag: props["標籤"]?.select?.name ?? "",
     order: Number.isFinite(props.Order?.number) ? props.Order.number : 9999,
     mapUrl: props["google map連結"]?.url ?? "",

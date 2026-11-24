@@ -3,15 +3,12 @@ import { createPortal } from "react-dom";
 import DayOverview from "./DayOverview.jsx";
 import { cachePage, getCachedPage } from "./pageCache.js";
 import {
-  EMPTY_DATE_LABEL,
   formatTripDate,
+  formatTripTime,
+  getTripDay,
   getInitialTripDate,
   getTicketStatusTone
 } from "./tripDisplay.js";
-
-function getTripDay(date) {
-  return date?.match(/^(\d{4}-\d{2}-\d{2})(?:T|$)/)?.[1] ?? EMPTY_DATE_LABEL;
-}
 
 function groupByDate(items) {
   return items.reduce((groups, item) => {
@@ -58,7 +55,8 @@ function TripMapTag({ item }) {
 }
 
 function TripMetadata({ item }) {
-  const { reservationTime, tag, ticketStatus } = item;
+  const { tag, ticketStatus } = item;
+  const reservationTime = formatTripTime(item);
 
   return (
     <>
@@ -301,7 +299,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
         <div>
           <p className="eyebrow">Travel Planner</p>
           <h1 ref={headingRef} tabIndex={-1}>2027 野澤滑雪</h1>
-          <p className="subtitle">從 Notion 同步，手機友善查看</p>
+          <p className="subtitle">從 Notion 同步 · 行程時間為日本當地時間</p>
         </div>
         <div className="hero-actions">
           <button type="button" className="view-switch" onClick={onShowShopping}>

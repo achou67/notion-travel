@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { getTripCoordinates } from "./tripCoordinates.js";
+import { formatTripTime } from "./tripDisplay.js";
 import "./DayOverview.css";
 
 function DayMap({ stops }) {
@@ -58,6 +59,7 @@ function DayMap({ stops }) {
 export default function DayOverview({ items }) {
   const entries = useMemo(() => items.map((item, index) => ({
     ...item,
+    reservationTime: formatTripTime(item),
     name: item.name || "未命名行程",
     number: index + 1,
     coordinates: getTripCoordinates(item.mapUrl),
