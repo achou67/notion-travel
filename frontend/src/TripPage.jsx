@@ -21,10 +21,13 @@ function groupByDate(items) {
   }, {});
 }
 
-function TripTag({ tag }) {
-  if (!tag) return null;
+function getTagLabel(tag) {
+  return tag?.replace(/\s*[（(]\s*希望能(?:吃|去)\s*[）)]\s*$/, "").trim() ?? "";
+}
 
-  const label = tag.replace(/\s*[（(]\s*希望能(?:吃|去)\s*[）)]\s*$/, "").trim();
+function TripTag({ tag }) {
+  const label = getTagLabel(tag);
+  if (!label) return null;
   let style;
   if (label === "食物") {
     style = { background: "#fce4ec", color: "#9d174d" };
@@ -33,6 +36,35 @@ function TripTag({ tag }) {
   }
 
   return <span className="tag" style={style}>{label}</span>;
+}
+
+function getMapUrl({ mapUrl, name, tag }) {
+  const savedUrl = mapUrl?.trim();
+  if (savedUrl && /^https?:\/\//i.test(savedUrl)) return savedUrl;
+
+  if (!["食物", "景點"].includes(getTagLabel(tag))) return "";
+  const query = name?.replace(/^\s*(?:(?:早餐|早午餐|午餐|下午茶|晚餐|宵夜)(?:備案)?|備案|目標)\s*[:：]\s*/, "").trim();
+  if (!query || query === "未命名行程") return "";
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+function TripMapTag({ item }) {
+  const href = getMapUrl(item);
+  if (!href) return null;
+
+  return (
+    <a
+      className="tag"
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="地圖，在 Google 地圖開啟"
+      style={{ background: "#dcfce7", color: "#166534", textDecoration: "none" }}
+    >
+      <span aria-hidden="true">🗺️</span>&nbsp;地圖
+    </a>
+  );
 }
 
 function TicketReservation({ status, reservationTime }) {
@@ -197,6 +229,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
           <h2>{selectedItem.name || "未命名行程"}</h2>
           <div className="detail-meta">
             <TripTag tag={selectedItem.tag} />
+            <TripMapTag item={selectedItem} />
             <TicketReservation
               status={selectedItem.ticketStatus}
               reservationTime={selectedItem.reservationTime}
@@ -321,11 +354,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
                       status={item.ticketStatus}
                       reservationTime={item.reservationTime}
                     />
-                    {item.mapUrl && (
-                      <a href={item.mapUrl} target="_blank" rel="noreferrer">
-                        🗺️ 地圖
-                      </a>
-                    )}
+                    <TripMapTag item={item} />
                   </div>
                 </div>
 
