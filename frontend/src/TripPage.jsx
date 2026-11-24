@@ -252,7 +252,19 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
           <button
             key={date}
             className={date === selectedDate ? "active" : ""}
-            onClick={() => {
+            onClick={event => {
+              const tab = event.currentTarget;
+              const dateTabs = tab.parentElement;
+              const tabBounds = tab.getBoundingClientRect();
+              const tabsBounds = dateTabs.getBoundingClientRect();
+              const offset = tabBounds.left - tabsBounds.left
+                + (tabBounds.width - dateTabs.clientWidth) / 2;
+              const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+              dateTabs.scrollTo({
+                left: dateTabs.scrollLeft + offset,
+                behavior: reduceMotion ? "instant" : "smooth"
+              });
+
               detailRequest.current++;
               setSelectedDate(date);
               setSelectedItem(null);
