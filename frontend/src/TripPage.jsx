@@ -21,6 +21,20 @@ function groupByDate(items) {
   }, {});
 }
 
+function TripTag({ tag }) {
+  if (!tag) return null;
+
+  const label = tag.replace(/\s*[（(]\s*希望能(?:吃|去)\s*[）)]\s*$/, "").trim();
+  let style;
+  if (label === "食物") {
+    style = { background: "#fce4ec", color: "#9d174d" };
+  } else if (label === "景點") {
+    style = { background: "#dbeafe", color: "#1e40af" };
+  }
+
+  return <span className="tag" style={style}>{label}</span>;
+}
+
 function TicketReservation({ status, reservationTime }) {
   return (
     <>
@@ -182,7 +196,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
           <p className="detail-date">{formatTripDate(getTripDay(selectedItem.date))}</p>
           <h2>{selectedItem.name || "未命名行程"}</h2>
           <div className="detail-meta">
-            {selectedItem.tag && <span className="tag">{selectedItem.tag}</span>}
+            <TripTag tag={selectedItem.tag} />
             <TicketReservation
               status={selectedItem.ticketStatus}
               reservationTime={selectedItem.reservationTime}
@@ -302,7 +316,7 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
                   <div className="card-title" id={`trip-title-${item.id}`}>{item.name || "未命名行程"}</div>
 
                   <div className="card-meta">
-                    {item.tag && <span className="tag">{item.tag}</span>}
+                    <TripTag tag={item.tag} />
                     <TicketReservation
                       status={item.ticketStatus}
                       reservationTime={item.reservationTime}
