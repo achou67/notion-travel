@@ -91,12 +91,6 @@
   display: block;
 }
 
-.day-map-panel p {
-  margin: 7px 0 0;
-  color: #445a64;
-  font-size: 0.78rem;
-}
-
 @media (max-width: 760px) {
   .day-overview-grid {
     grid-template-columns: 1fr;
@@ -111,15 +105,3 @@
   }
 }
 
-.day-directions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  margin-top: 8px;
-}
-
-.day-directions a {
-  color: #28596e;
-  font-size: 0.85rem;
-  font-weight: 700;
-}

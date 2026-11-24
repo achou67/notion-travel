@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { getGoogleMapQuery, getTripCoordinates } from "./tripCoordinates.js";
+import { getTripCoordinates } from "./tripCoordinates.js";
 import "./DayOverview.css";
 
 function DayMap({ stops }) {
@@ -55,34 +55,6 @@ function DayMap({ stops }) {
   return <div ref={container} className="day-map" role="region" aria-label="當日地圖" />;
 }
 
-function getDirections(entries) {
-  const visits = [];
-  for (const entry of entries) {
-    const query = getGoogleMapQuery(entry.mapUrl);
-    if (!entry.alternative && query && query !== visits.at(-1)?.query) {
-      visits.push({ query, number: entry.number });
-    }
-  }
-
-  const directions = [];
-  // Google Maps on mobile supports three intermediate stops per link.
-  for (let start = 0; start < visits.length - 1; start += 4) {
-    const leg = visits.slice(start, start + 5);
-    const end = leg.at(-1);
-    const params = new URLSearchParams({
-      api: "1",
-      origin: leg[0].query,
-      destination: end.query
-    });
-    if (leg.length > 2) params.set("waypoints", leg.slice(1, -1).map(visit => visit.query).join("|"));
-    directions.push({
-      href: `https://www.google.com/maps/dir/?${params}`,
-      label: `第 ${leg[0].number}–${end.number} 站`
-    });
-  }
-  return directions;
-}
-
 export default function DayOverview({ items }) {
   const entries = useMemo(() => items.map((item, index) => ({
     ...item,
@@ -92,9 +64,6 @@ export default function DayOverview({ items }) {
     alternative: item.name?.includes("備案")
   })), [items]);
   const stops = useMemo(() => entries.filter(entry => entry.coordinates), [entries]);
-
-  const directions = getDirections(entries);
-  const hasUnmappedLocations = entries.some(entry => entry.mapUrl && !entry.coordinates);
 
   return (
     <section className="day-overview" aria-labelledby="day-overview-title">
@@ -113,26 +82,7 @@ export default function DayOverview({ items }) {
             </li>
           ))}
         </ol>
-        {(stops.length > 0 || directions.length > 0) && (
-          <div className="day-map-panel">
-            {stops.length > 0 && (
-              <>
-                <DayMap stops={stops} />
-                <p>地圖編號對應大綱。虛線表示造訪順序。</p>
-              </>
-            )}
-            {hasUnmappedLocations && <p>部分地點可從下方行程卡片開啟 Google 地圖。</p>}
-            {directions.length > 0 && (
-              <div className="day-directions">
-                {directions.map(direction => (
-                  <a key={direction.href} href={direction.href} target="_blank" rel="noreferrer">
-                    Google 地圖路線{directions.length > 1 ? ` · ${direction.label}` : ""}
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {stops.length > 0 && <DayMap stops={stops} />}
       </div>
     </section>
   );
