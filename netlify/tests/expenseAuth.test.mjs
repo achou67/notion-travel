@@ -49,3 +49,17 @@ test("ledger identities come from verified session cookies and the current allow
   assert.equal(await getExpenseUser(new Request(origin + "/api/expenses", { headers: { cookie: cookieName + "=invalid" } }), env), null);
   assert.equal(await getExpenseUser(new Request(origin + "/api/expenses", { headers: { authorization: "Bearer " + jwt } }), env), null);
 });
+
+test("Vercel route parameters stay out of Google sign-in while callback fields survive", async () => {
+  const seen = [];
+  const handler = createExpenseAuth({ env, auth: async request => {
+    seen.push(new URL(request.url));
+    return new Response(null, { status: 200 });
+  } });
+  await handler(new Request(origin + "/api/expense-auth?action=signin%2Fgoogle&expenseAuthAction=signin%2Fgoogle"));
+  await handler(new Request(origin + "/api/auth/callback/google?action=callback%2Fgoogle&code=test-code&state=test-state"));
+  assert.equal(seen[0].pathname, "/api/auth/signin/google");
+  assert.equal(seen[0].search, "");
+  assert.equal(seen[1].pathname, "/api/auth/callback/google");
+  assert.deepEqual([...seen[1].searchParams], [["code", "test-code"], ["state", "test-state"]]);
+});

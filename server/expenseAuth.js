@@ -50,6 +50,10 @@ export function createExpenseAuth({ env = key => process.env[key], auth = Auth }
     if (!routes.has(route)) return new Response(null, { status: 404, headers });
     url.pathname = `${basePath}/${route}`;
     url.searchParams.delete("expenseAuthAction");
+    url.searchParams.delete("action");
+    // Auth.js forwards query parameters on provider sign-in to Google.
+    // The form body already carries the CSRF token and callback URL.
+    if (route === "signin/google") url.search = "";
 
     const response = await auth(new Request(url, request), {
       basePath,
