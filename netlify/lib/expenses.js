@@ -87,7 +87,7 @@ function expenseProperties(input, knownMembers, owner) {
 export function createExpenseHandler({ getUser, env, notionFetch = fetch, queryResults = fetchNotionResults }) {
   return async request => {
     try {
-      if (!["GET", "POST", "PATCH"].includes(request.method)) {
+      if (!["GET", "POST", "PATCH", "DELETE"].includes(request.method)) {
         return json({ error: "不支援此操作。" }, 405);
       }
       if (request.method !== "GET" && request.headers.get("origin") !== new URL(request.url).origin) {
@@ -168,15 +168,26 @@ export function createExpenseHandler({ getUser, env, notionFetch = fetch, queryR
         throw new HttpError(400, "請檢查送出的資料。");
       }
       let original;
-      if (request.method === "PATCH") {
+      const deleting = request.method === "DELETE";
+      if (request.method === "PATCH" || deleting) {
         if (!uuidPattern.test(input?.id ?? "")) throw new HttpError(400, "支出編號有誤。");
         original = await notion(`/pages/${input.id}`, "GET");
-        if (!sourceMatches(original, expensesId) || original.archived || original.in_trash) {
+        if (!sourceMatches(original, expensesId)) throw new HttpError(404, "找不到這筆支出。");
+        if (!canEdit(original, user)) {
+          throw new HttpError(403, deleting ? "你只能刪除自己新增的記帳。" : "你只能修改自己新增的記帳。");
+        }
+        if (original.archived || original.in_trash) {
+          if (deleting) return json({ id: original.id });
           throw new HttpError(404, "找不到這筆支出。");
         }
-        if (!canEdit(original, user)) throw new HttpError(403, "你只能修改自己新增的記帳。");
         if (input.updatedAt !== original.last_edited_time) {
-          throw new HttpError(409, "這筆支出已更新，請重新整理後再編輯。");
+          throw new HttpError(409, deleting
+            ? "這筆支出已更新，請重新整理後再刪除。"
+            : "這筆支出已更新，請重新整理後再編輯。");
+        }
+        if (deleting) {
+          await notion(`/pages/${original.id}`, "PATCH", { in_trash: true });
+          return json({ id: original.id });
         }
       }
 

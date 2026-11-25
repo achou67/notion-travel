@@ -124,6 +124,31 @@ export default function ExpensesPage({ onShowTrips }) {
     }
   }
 
+  async function deleteExpense(expense) {
+    if (busy || !window.confirm(`確定刪除「${expense.title || "這筆支出"}」？刪除後會重新計算分帳。`)) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await expenseRequest({
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: expense.id, updatedAt: expense.updatedAt })
+      });
+      setData(current => ({ ...current, expenses: current.expenses.filter(item => item.id !== expense.id) }));
+      setDraft(current => current.id === expense.id ? newExpense(data.members) : current);
+      setNotice("支出已刪除。");
+    } catch (failure) {
+      setError(failure.message);
+      if (failure.status === 401) {
+        setData(null);
+        setMode("login");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const update = (property, value) => setDraft(current => ({ ...current, [property]: value }));
   const memberNames = new Map((data?.members ?? []).map(member => [member.id, member.name]));
   const hasRoster = !!data?.members.length;
@@ -243,12 +268,15 @@ export default function ExpensesPage({ onShowTrips }) {
                 <span>{[expense.date, memberNames.get(expense.payerId) && `${memberNames.get(expense.payerId)} 付款`].filter(Boolean).join(" · ")}</span>
                 {!!expense.participantIds.length && <span>分攤 {expense.participantIds.map(id => memberNames.get(id)).filter(Boolean).join("、")}</span>}
                 {expense.status && expense.status !== "可結算" && <span>{expense.status}</span>}
-                {expense.canEdit && <button type="button" className="view-switch" disabled={busy} onClick={() => {
-                  setDraft(expense);
-                  setError("");
-                  setNotice("");
-                  document.getElementById("expense-form").scrollIntoView();
-                }}>編輯</button>}
+                {expense.canEdit && <div className="expense-actions">
+                  <button type="button" className="view-switch" disabled={busy} onClick={() => {
+                    setDraft(expense);
+                    setError("");
+                    setNotice("");
+                    document.getElementById("expense-form").scrollIntoView();
+                  }}>編輯</button>
+                  <button type="button" className="view-switch" disabled={busy} onClick={() => void deleteExpense(expense)}>刪除</button>
+                </div>}
               </li>
             ))}</ul>
           </section>

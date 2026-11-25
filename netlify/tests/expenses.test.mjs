@@ -12,10 +12,10 @@ const origin = "https://example.test";
 const input = { title: "團體晚餐", amount: 1500, currency: "JPY", date: "", payerId, participantIds: [payerId] };
 const user = { id: "member-1", roles: ["expense-member"] };
 
-function handlerFixture({ identity = user, owner = user.id, sourceId = expensesId, queryError } = {}) {
+function handlerFixture({ identity = user, owner = user.id, sourceId = expensesId, queryError, trashed = false } = {}) {
   const calls = [];
   const page = {
-    id: expenseId, last_edited_time: updatedAt,
+    id: expenseId, last_edited_time: updatedAt, in_trash: trashed,
     parent: { type: "data_source_id", data_source_id: sourceId },
     properties: { "網站建立者 ID": { rich_text: [{ plain_text: owner }] } }
   };
@@ -98,5 +98,27 @@ test("Notion failures explain how to restore access without exposing upstream da
     assert.equal(result.status, 503);
     assert.match((await result.json()).error, message);
     assert.match(result.headers.get("cache-control"), /no-store/);
+  }
+});
+
+test("deletion only trashes the authorized expense at the displayed version", async () => {
+  const selected = { id: expenseId, updatedAt };
+  for (const [fixture, body, site, status, writes] of [
+    [{ identity: null }, selected, origin, 401, 0],
+    [{ owner: "another" }, selected, origin, 403, 0],
+    [{}, selected, "https://other.test", 403, 0],
+    [{ sourceId: membersId }, selected, origin, 404, 0],
+    [{}, { ...selected, updatedAt: "stale" }, origin, 409, 0],
+    [{}, selected, origin, 200, 1],
+    [{ trashed: true }, selected, origin, 200, 0],
+    [{ owner: "another", identity: { id: "admin", roles: ["expense-admin"] } }, selected, origin, 200, 1]
+  ]) {
+    const { handler, calls } = handlerFixture(fixture);
+    const result = await handler(request("DELETE", body, site));
+    assert.equal(result.status, status);
+    const updates = calls.filter(call => call.method === "PATCH");
+    assert.equal(updates.length, writes);
+    if (writes) assert.deepEqual(updates[0].body, { in_trash: true });
+    assert.equal(calls.some(call => call.method === "QUERY"), false);
   }
 });

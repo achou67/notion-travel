@@ -14,4 +14,4 @@ function handler(request) {
   return ledger(request);
 }
 
-export { handler as GET, handler as POST, handler as PATCH };
+export { handler as GET, handler as POST, handler as PATCH, handler as DELETE };
