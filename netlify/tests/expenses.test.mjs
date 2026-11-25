@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createExpenseHandler } from "../lib/expenses.js";
+import { NotionRequestError } from "../lib/notion.js";
 
 const membersId = "11111111-1111-4111-8111-111111111111";
 const expensesId = "22222222-2222-4222-8222-222222222222";
@@ -11,7 +12,7 @@ const origin = "https://example.test";
 const input = { title: "團體晚餐", amount: 1500, currency: "JPY", date: "", payerId, participantIds: [payerId] };
 const user = { id: "member-1", roles: ["expense-member"] };
 
-function handlerFixture({ identity = user, owner = user.id, sourceId = expensesId } = {}) {
+function handlerFixture({ identity = user, owner = user.id, sourceId = expensesId, queryError } = {}) {
   const calls = [];
   const page = {
     id: expenseId, last_edited_time: updatedAt,
@@ -25,6 +26,7 @@ function handlerFixture({ identity = user, owner = user.id, sourceId = expensesI
     })[key],
     queryResults: async url => {
       calls.push({ url, method: "QUERY" });
+      if (queryError && url.includes(membersId)) throw queryError;
       return url.includes(membersId) ? [{
         id: payerId, parent: { type: "data_source_id", data_source_id: membersId }, properties: {}
       }] : [page];
@@ -86,5 +88,15 @@ test("updates check source, owner and stale versions before writing", async () =
     const writes = calls.filter(call => call.method === "PATCH");
     assert.equal(writes.length, status === 200 ? 1 : 0);
     if (writes.length) assert.equal("網站建立者 ID" in writes[0].body.properties, false);
+  }
+});
+
+test("Notion failures explain how to restore access without exposing upstream data", async () => {
+  for (const [status, message] of [[401, /EXPENSE_NOTION_TOKEN/], [403, /Read content/], [404, /旅伴與結算.*Add connections/]]) {
+    const { handler } = handlerFixture({ queryError: new NotionRequestError(status) });
+    const result = await handler(request());
+    assert.equal(result.status, 503);
+    assert.match((await result.json()).error, message);
+    assert.match(result.headers.get("cache-control"), /no-store/);
   }
 });

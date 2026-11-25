@@ -1,3 +1,10 @@
+export class NotionRequestError extends Error {
+  constructor(status) {
+    super(`Notion API 回傳 ${status}`);
+    this.status = status;
+  }
+}
+
 export async function fetchNotionResults(url, options) {
   const results = [];
   let cursor;
@@ -11,7 +18,7 @@ export async function fetchNotionResults(url, options) {
       if (cursor) target.searchParams.set("start_cursor", cursor);
     }
     const response = await fetch(target.href, request);
-    if (!response.ok) throw new Error(`Notion API 回傳 ${response.status}`);
+    if (!response.ok) throw new NotionRequestError(response.status);
     const data = await response.json();
     if (!Array.isArray(data.results)) throw new Error("Notion API 清單格式不正確");
     results.push(...data.results);

@@ -1,4 +1,4 @@
-import { fetchNotionResults } from "./notion.js";
+import { fetchNotionResults, NotionRequestError } from "./notion.js";
 
 const ownerProperty = "網站建立者 ID";
 const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -111,9 +111,31 @@ export function createExpenseHandler({ getUser, env, notionFetch = fetch, queryR
         "Notion-Version": "2025-09-03",
         "Content-Type": "application/json"
       };
-      const query = async source => (await queryResults(`${notionBase}/data_sources/${source}/query`, {
-        method: "POST", headers, signal: AbortSignal.timeout(12000)
-      })).filter(page => sourceMatches(page, source) && !page.archived && !page.in_trash);
+      async function query(source) {
+        const database = source === membersId ? "旅伴與結算" : "共同支出";
+        try {
+          const rows = await queryResults(`${notionBase}/data_sources/${source}/query`, {
+            method: "POST", headers, signal: AbortSignal.timeout(12000)
+          });
+          return rows.filter(page => sourceMatches(page, source) && !page.archived && !page.in_trash);
+        } catch (error) {
+          if (!(error instanceof NotionRequestError)) throw error;
+          console.warn("Expense Notion query failed", { database, status: error.status });
+          if (error.status === 401) {
+            throw new HttpError(503, "Notion 拒絕了分帳金鑰。請確認 Vercel 的 EXPENSE_NOTION_TOKEN 是分帳連線目前的金鑰。");
+          }
+          if (error.status === 403) {
+            throw new HttpError(503, `Notion 分帳連線缺少讀取「${database}」的權限。請確認連線已勾選 Read content。`);
+          }
+          if (error.status === 404) {
+            throw new HttpError(503, `Notion 無法存取「${database}」。請在這個資料庫的「⋯ → Add connections」加入分帳連線。`);
+          }
+          if (error.status === 429 || error.status >= 500) {
+            throw new HttpError(503, "Notion 暫時無法回應分帳查詢，請稍後重新整理。");
+          }
+          throw new HttpError(503, `Notion 拒絕讀取「${database}」（${error.status}）。請聯絡分帳管理員。`);
+        }
+      }
 
       async function notion(path, method, body) {
         const response = await notionFetch(notionBase + path, {
@@ -165,9 +187,11 @@ export function createExpenseHandler({ getUser, env, notionFetch = fetch, queryR
         : await notion("/pages", "POST", { parent: { type: "data_source_id", data_source_id: expensesId }, properties });
       return json(toExpense(saved, user), original ? 200 : 201);
     } catch (error) {
-      return error instanceof HttpError
-        ? json({ error: error.message }, error.status)
-        : json({ error: "目前無法讀取分帳服務，請稍後再試。" }, 503);
+      if (error instanceof HttpError) return json({ error: error.message }, error.status);
+      console.error("Expense service threw an unexpected error", {
+        type: error instanceof TypeError ? "TypeError" : error instanceof DOMException ? error.name : "Error"
+      });
+      return json({ error: "目前無法讀取分帳服務，請稍後再試。" }, 503);
     }
   };
 }
