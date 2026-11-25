@@ -80,7 +80,7 @@ function ShoppingPage({ onShowTrips }) {
     <main className="page page--shopping view-enter">
       <header className="hero shopping-hero">
         <div>
-          <h1>我的購物清單</h1>
+          <h1 tabIndex={-1}>我的購物清單</h1>
           <p className="subtitle">清單儲存在此瀏覽器。</p>
         </div>
         <button type="button" className="view-switch" onClick={onShowTrips}>返回行程</button>

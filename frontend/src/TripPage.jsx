@@ -76,30 +76,6 @@ function TripMetadata({ item }) {
   );
 }
 
-function BackToTop({ headingRef }) {
-  return createPortal(
-    <button
-      type="button"
-      className="view-switch"
-      style={{
-        position: "fixed",
-        right: "max(16px, env(safe-area-inset-right))",
-        bottom: "max(16px, env(safe-area-inset-bottom))",
-        zIndex: 10,
-        minHeight: 44
-      }}
-      onClick={() => {
-        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        headingRef.current?.focus({ preventScroll: true });
-        window.scrollTo({ top: 0, behavior: reduceMotion ? "instant" : "smooth" });
-      }}
-    >
-      <span aria-hidden="true">↑</span> 回到頂端
-    </button>,
-    document.body
-  );
-}
-
 function TripPage({ onShowShopping, onShowPacking, onShowExpenses, snapshot = null, onLoadFailure }) {
   const [items, setItems] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
@@ -111,7 +87,6 @@ function TripPage({ onShowShopping, onShowPacking, onShowExpenses, snapshot = nu
   const [loadError, setLoadError] = useState("");
   const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 760px)").matches);
   const detailRequest = useRef(0);
-  const headingRef = useRef(null);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 760px)");
@@ -298,7 +273,7 @@ function TripPage({ onShowShopping, onShowPacking, onShowExpenses, snapshot = nu
       <header className="hero">
         <div>
           <p className="eyebrow">Travel Planner</p>
-          <h1 ref={headingRef} tabIndex={-1}>2027 野澤滑雪</h1>
+          <h1 tabIndex={-1}>2027 野澤滑雪</h1>
           <p className="subtitle">從 Notion 同步 · 行程時間為日本當地時間</p>
         </div>
         <div className="hero-actions">
@@ -409,8 +384,6 @@ function TripPage({ onShowShopping, onShowPacking, onShowExpenses, snapshot = nu
           {detailContent}
         </aside>}
       </section>
-
-      {!previewImage && <BackToTop headingRef={headingRef} />}
 
       {previewImage && createPortal(
         <div className="image-modal" onClick={() => setPreviewImage(null)}>

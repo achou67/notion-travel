@@ -105,6 +105,12 @@ function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function scrollToTop() {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelector("main h1")?.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "instant" : "smooth" });
+  }
+
   const pageKey = `${view}-${revision}-${snapshot?.savedAt || "online"}`;
 
   return (
@@ -139,6 +145,9 @@ function App() {
           </div>
         </div>
       </details>}
+      <button type="button" className="view-switch back-to-top" onClick={scrollToTop}>
+        <span aria-hidden="true">↑</span> 回到頂端
+      </button>
     </>
   );
 }

@@ -205,7 +205,7 @@ export default function ExpensesPage({ onShowTrips }) {
   return (
     <main className="page expenses-page">
       <header className="hero">
-        <div><h1>野澤滑雪分帳</h1></div>
+        <div><h1 tabIndex={-1}>野澤滑雪分帳</h1></div>
         <div className="expense-actions">
           <button type="button" className="view-switch" onClick={onShowTrips}>返回行程</button>
           {(mode === "ledger" || mode === "unavailable") && <button type="button" className="view-switch"

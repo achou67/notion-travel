@@ -121,7 +121,7 @@ export default function PackingPage({ onShowTrips }) {
     <main className="page page--packing view-enter">
       <header className="hero packing-hero">
         <div>
-          <h1>行李清單</h1>
+          <h1 tabIndex={-1}>行李清單</h1>
           <p className="subtitle">清單與打包進度儲存在此瀏覽器。</p>
         </div>
         <button type="button" className="view-switch" onClick={onShowTrips}>返回行程</button>
