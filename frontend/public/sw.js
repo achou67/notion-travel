@@ -1,4 +1,4 @@
-const CACHE_NAME = "notion-travel-shell-v6";
+const CACHE_NAME = "notion-travel-shell-v7";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest?v=nozawa-3",
@@ -40,7 +40,7 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  if (url.pathname.startsWith("/.netlify/functions/")) {
+  if (url.pathname.startsWith("/.netlify/functions/") || url.pathname.startsWith("/api/")) {
     event.respondWith(fetch(request, { cache: "no-store" }));
     return;
   }

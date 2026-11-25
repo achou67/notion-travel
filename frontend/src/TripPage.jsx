@@ -100,7 +100,7 @@ function BackToTop({ headingRef }) {
   );
 }
 
-function TripPage({ onShowShopping, onShowPacking, snapshot = null, onLoadFailure }) {
+function TripPage({ onShowShopping, onShowPacking, onShowExpenses, snapshot = null, onLoadFailure }) {
   const [items, setItems] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
@@ -308,6 +308,7 @@ function TripPage({ onShowShopping, onShowPacking, snapshot = null, onLoadFailur
           <button type="button" className="view-switch" onClick={onShowPacking}>
             🧳 行李清單
           </button>
+          <button type="button" className="view-switch" onClick={onShowExpenses}>分帳</button>
         </div>
       </header>
 

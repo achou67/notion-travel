@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import "./App.css";
+import ExpensesPage from "./ExpensesPage.jsx";
 import PackingPage from "./PackingPage.jsx";
 import ShoppingPage from "./ShoppingPage.jsx";
 import TripPage from "./TripPage.jsx";
@@ -108,7 +109,7 @@ function App() {
 
   return (
     <>
-      {view !== "shopping" && (snapshot || failed) && <aside className="offline-notice" aria-label="資料連線狀態" aria-live="polite">
+      {view !== "expenses" && view !== "shopping" && (snapshot || failed) && <aside className="offline-notice" aria-label="資料連線狀態" aria-live="polite">
         <span>{snapshot ? <><strong>目前使用離線版本</strong> · {new Date(snapshot.savedAt).toLocaleString("zh-TW")}</> : saved ? "線上資料讀取失敗" : "線上資料讀取失敗，且此裝置尚未保存離線版本"}</span>
         {failed && saved && !snapshot && <button type="button" disabled={busy} onClick={() => { setSnapshot(saved); setMessage(""); }}>查看已保存版本</button>}
         <button type="button" disabled={busy} onClick={returnOnline}>重試線上資料</button>
@@ -117,10 +118,12 @@ function App() {
         <ShoppingPage onShowTrips={() => navigate("trips")} />
       ) : view === "packing" ? (
         <PackingPage onShowTrips={() => navigate("trips")} />
+      ) : view === "expenses" ? (
+        <ExpensesPage onShowTrips={() => navigate("trips")} />
       ) : (
-        <TripPage key={pageKey} snapshot={snapshot} onLoadFailure={handleLoadFailure} onShowShopping={() => navigate("shopping")} onShowPacking={() => navigate("packing")} />
+        <TripPage key={pageKey} snapshot={snapshot} onLoadFailure={handleLoadFailure} onShowShopping={() => navigate("shopping")} onShowPacking={() => navigate("packing")} onShowExpenses={() => navigate("expenses")} />
       )}
-      {view !== "shopping" && <details className="offline-panel">
+      {view !== "expenses" && view !== "shopping" && <details className="offline-panel">
         <summary>離線使用{saved && <small>已保存</small>}</summary>
         <div className="offline-content">
           <p>連線時優先讀取線上資料；出發前可保存到此裝置，供斷網時查看。</p>

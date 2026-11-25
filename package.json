@@ -1,5 +1,8 @@
 {
   "name": "notion-travel",
   "version": "1.0.0",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@auth/core": "0.41.3"
+  }
 }
