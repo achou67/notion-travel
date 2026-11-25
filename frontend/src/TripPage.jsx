@@ -100,7 +100,7 @@ function BackToTop({ headingRef }) {
   );
 }
 
-function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
+function TripPage({ onShowShopping, onShowPacking, snapshot = null, onLoadFailure }) {
   const [items, setItems] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
@@ -305,7 +305,9 @@ function TripPage({ onShowShopping, snapshot = null, onLoadFailure }) {
           <button type="button" className="view-switch" onClick={onShowShopping}>
             🛍️ 購物清單
           </button>
-          <div className="hero-emoji" aria-hidden="true">🧳</div>
+          <button type="button" className="view-switch" onClick={onShowPacking}>
+            🧳 行李清單
+          </button>
         </div>
       </header>
 

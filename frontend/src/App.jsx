@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import "./App.css";
+import PackingPage from "./PackingPage.jsx";
 import ShoppingPage from "./ShoppingPage.jsx";
 import TripPage from "./TripPage.jsx";
 import { getView } from "./viewRoute.js";
@@ -97,7 +98,7 @@ function App() {
   }, []);
 
   function navigate(nextView) {
-    const path = nextView === "shopping" ? "/shopping" : "/";
+    const path = nextView === "trips" ? "/" : `/${nextView}`;
     window.history.pushState({}, "", path);
     setView(nextView);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -114,8 +115,10 @@ function App() {
       </aside>}
       {view === "shopping" ? (
         <ShoppingPage key={pageKey} snapshot={snapshot} onLoadFailure={handleLoadFailure} onShowTrips={() => navigate("trips")} />
+      ) : view === "packing" ? (
+        <PackingPage onShowTrips={() => navigate("trips")} />
       ) : (
-        <TripPage key={pageKey} snapshot={snapshot} onLoadFailure={handleLoadFailure} onShowShopping={() => navigate("shopping")} />
+        <TripPage key={pageKey} snapshot={snapshot} onLoadFailure={handleLoadFailure} onShowShopping={() => navigate("shopping")} onShowPacking={() => navigate("packing")} />
       )}
       <details className="offline-panel">
         <summary>離線使用{saved && <small>已保存</small>}</summary>

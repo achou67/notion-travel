@@ -34,6 +34,7 @@ test("缺少 Notion 屬性時提供安全預設值", () => {
     lastEditedTime: "",
     name: "未命名行程",
     date: "",
+    dateEnd: null,
     tag: "",
     order: 9999,
     mapUrl: "",

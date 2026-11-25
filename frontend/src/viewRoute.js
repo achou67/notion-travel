@@ -1,3 +1,4 @@
 export function getView(pathname = "/") {
-  return /^\/shopping\/?$/.test(pathname) ? "shopping" : "trips";
+  const section = /^\/(shopping|packing)\/?$/.exec(pathname);
+  return section?.[1] ?? "trips";
 }

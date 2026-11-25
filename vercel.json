@@ -22,6 +22,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/packing",
+      "destination": "/index.html"
+    },
+    {
       "source": "/:day([0-9]{4}-[0-9]{2}-[0-9]{2})",
       "destination": "/index.html"
     }

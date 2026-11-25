@@ -8,3 +8,9 @@ test("購物清單路徑不會和日期路徑衝突", () => {
   assert.equal(getView("/2026-09-06"), "trips");
   assert.equal(getView("/"), "trips");
 });
+
+test("行李清單有獨立路徑", () => {
+  assert.equal(getView("/packing"), "packing");
+  assert.equal(getView("/packing/"), "packing");
+  assert.equal(getView("/packing/other"), "trips");
+});
