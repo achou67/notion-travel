@@ -504,6 +504,10 @@ h1 {
   gap: 14px;
 }
 
+.hero-actions a.view-switch {
+  text-decoration: none;
+}
+
 .view-switch {
   border: 1px solid rgba(255, 141, 184, 0.28);
   border-radius: 999px;

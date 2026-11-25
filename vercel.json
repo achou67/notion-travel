@@ -4,11 +4,14 @@
   "installCommand": "npm ci && npm --prefix frontend ci",
   "buildCommand": "npm --prefix frontend run build",
   "outputDirectory": "frontend/dist",
-  "rewrites": [
+  "redirects": [
     {
       "source": "/expenses",
-      "destination": "/index.html"
-    },
+      "destination": "https://app.lightsplit.com/",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
     {
       "source": "/.netlify/functions/notion",
       "destination": "/api/notion"

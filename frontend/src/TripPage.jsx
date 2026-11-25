@@ -76,7 +76,7 @@ function TripMetadata({ item }) {
   );
 }
 
-function TripPage({ onShowShopping, onShowPacking, onShowExpenses, snapshot = null, onLoadFailure }) {
+function TripPage({ onShowShopping, onShowPacking, snapshot = null, onLoadFailure }) {
   const [items, setItems] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
@@ -283,7 +283,7 @@ function TripPage({ onShowShopping, onShowPacking, onShowExpenses, snapshot = nu
           <button type="button" className="view-switch" onClick={onShowPacking}>
             🧳 行李清單
           </button>
-          <button type="button" className="view-switch" onClick={onShowExpenses}>分帳</button>
+          <a className="view-switch" href="https://app.lightsplit.com/" target="_blank" rel="noopener noreferrer">分帳</a>
         </div>
       </header>
 
