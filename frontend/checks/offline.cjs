@@ -128,9 +128,9 @@ async function check() {
     await page.getByRole("button", { name: "編輯 雪襪" }).click();
     await page.getByLabel("商品名稱").fill("厚雪襪");
     await page.getByRole("button", { name: "儲存商品" }).click();
-    await page.getByRole("checkbox", { name: "已買 厚雪襪" }).check();
+    await page.getByRole("checkbox", { name: "已買 厚雪襪" }).click();
     await page.getByRole("button", { name: "已買 (1)", exact: true }).click();
-    await page.getByRole("checkbox", { name: "已買 厚雪襪" }).uncheck();
+    await page.getByRole("checkbox", { name: "已買 厚雪襪" }).click();
     await page.getByRole("button", { name: "待買 (1)", exact: true }).click();
     await page.getByText("買深色", { exact: true }).waitFor();
     assert.ok(!requests.some(url => url.includes("/shopping")), "Personal shopping must not call any shopping API");
@@ -143,6 +143,13 @@ async function check() {
     await page.getByRole("button", { name: "Trip a v2", exact: true }).waitFor();
     assert.equal(await page.getByText("目前使用離線版本", { exact: true }).count(), 0);
     assert.equal((await readSaved()).savedAt, first.savedAt, "Online reads must not silently replace the snapshot");
+
+    const otherContext = await browser.newContext();
+    const otherShop = await otherContext.newPage();
+    await otherShop.goto(`${origin}/shopping`);
+    await otherShop.getByText("目前沒有待買商品。", { exact: true }).waitFor();
+    assert.equal(await otherShop.getByRole("checkbox", { name: "已買 厚雪襪" }).count(), 0);
+    await otherContext.close();
 
     failApi = true;
     await page.goto(origin);
