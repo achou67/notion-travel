@@ -33,3 +33,21 @@
 @media (max-width: 760px) {
   .expense-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+.expense-invite {
+  margin: 0 0 16px;
+}
+.expense-invite > summary {
+  padding-block: 6px;
+  cursor: pointer;
+  font-weight: 750;
+}
+.expense-invite input[readonly] {
+  width: 100%;
+  min-height: 44px;
+  margin-block: 8px;
+  padding: 8px;
+  border: 1px solid #d5bcc8;
+  border-radius: 8px;
+  font: inherit;
+}

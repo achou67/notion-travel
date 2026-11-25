@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@auth/core": "0.41.3"
+    "@auth/core": "0.41.3",
+    "@vercel/blob": "2.9.0"
   }
 }

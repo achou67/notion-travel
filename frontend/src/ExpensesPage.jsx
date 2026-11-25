@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import "./ExpensesPage.css";
 import { settleExpenses } from "./expenseSettlement.js";
+import { ExpenseInvite } from "./ExpenseInvite.jsx";
+import { inviteRequest } from "./expenseInviteRequest.js";
 
 const endpoint = "/.netlify/functions/expenses";
 const newExpense = () => ({
@@ -32,6 +34,7 @@ function balanceLabel(amount, currency) {
 export default function ExpensesPage({ onShowTrips }) {
   const [data, setData] = useState(null);
   const [mode, setMode] = useState("loading");
+  const [inviteToken] = useState(() => new URLSearchParams(window.location.hash.slice(1)).get("invite") || "");
   const [draft, setDraft] = useState(newExpense);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -50,6 +53,14 @@ export default function ExpensesPage({ onShowTrips }) {
         }
       } catch (failure) {
         if (!active) return;
+        if (failure.status === 403) {
+          const invite = await inviteRequest(null, { signal: controller.signal }).catch(() => null);
+          if (!active) return;
+          if (invite?.pending && invite.signedIn) {
+            setMode("join");
+            return;
+          }
+        }
         const loginError = new URLSearchParams(window.location.search).get("error");
         if (failure.status === 401) {
           if (loginError === "AccessDenied") setError("這個 Google 帳號不在旅伴邀請名單中。");
@@ -124,13 +135,15 @@ export default function ExpensesPage({ onShowTrips }) {
       {error && <p className="expense-error" role="alert">{error}</p>}
       {notice && <p className="expense-message" role="status">{notice}</p>}
 
-      {mode === "login" && (
-        <section className="expense-panel">
+      {mode === "login" && (inviteToken
+        ? <ExpenseInvite mode="start" token={inviteToken} signInUrl={signInUrl} />
+        : <section className="expense-panel">
           <h2>旅伴登入</h2>
           <p>請使用受邀的 Google 帳號查看帳本或新增支出。</p>
           <a className="expense-primary" href={signInUrl}>使用 Google 登入</a>
-        </section>
-      )}
+        </section>)}
+      {mode === "join" && <ExpenseInvite mode="join" signOutUrl={signOutUrl} />}
+      {mode === "ledger" && data?.isAdmin && <ExpenseInvite mode="admin" />}
 
       {mode === "ledger" && data && (
         <div className="expense-grid">

@@ -1,3 +1,4 @@
+import { expenseInvites, inviteCookie, invitesConfigured } from "./expenseInvites.js";
 import { Auth } from "@auth/core";
 import { getToken } from "@auth/core/jwt";
 import Google from "@auth/core/providers/google";
@@ -71,8 +72,12 @@ export function createExpenseAuth({ env = key => process.env[key], auth = Auth }
       pages: { error: "/expenses" },
       callbacks: {
         signIn({ account, profile }) {
-          return account?.provider === "google" && profile?.email_verified === true &&
-            Boolean(account.providerAccountId && invitationRole(profile.email, env));
+          if (account?.provider !== "google" || profile?.email_verified !== true ||
+              typeof account.providerAccountId !== "string" || !account.providerAccountId) return false;
+          if (invitationRole(profile.email, env)) return true;
+          if (!invitesConfigured()) return false;
+          const id = `google:${account.providerAccountId}`;
+          return expenseInvites.isMember(id).then(member => member || expenseInvites.valid(inviteCookie(request), id));
         },
         jwt({ token, account, profile }) {
           if (account?.provider === "google") {
@@ -100,6 +105,8 @@ export async function getExpenseUser(request, env = key => process.env[key]) {
     salt: config.cookieName
   });
   if (typeof token?.expenseSubject !== "string" || !token.expenseSubject) return null;
+  const id = `google:${token.expenseSubject}`;
   const role = invitationRole(token.email, env);
-  return { id: `google:${token.expenseSubject}`, roles: role ? [role] : [] };
+  const joined = !role && invitesConfigured() && await expenseInvites.isMember(id);
+  return { id, roles: role ? [role] : joined ? ["expense-member"] : [] };
 }
