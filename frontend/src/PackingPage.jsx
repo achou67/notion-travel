@@ -84,6 +84,17 @@ export default function PackingPage({ onShowTrips }) {
     if (form?.id === group.id || form?.groupId === group.id) setForm(null);
   }
 
+  async function restoreDefaults() {
+    if (!window.confirm("確定還原預設清單？這會清除這個瀏覽器的所有自訂分類、物品和打包勾選。")) return;
+    setBusy(true);
+    const restored = await save(() => defaultPackingList());
+    setBusy(false);
+    if (restored) {
+      setForm(null);
+      setEditing(false);
+    }
+  }
+
   function renderForm() {
     return (
       <form className="packing-edit-form" key={`${form.type}-${form.groupId ?? ""}-${form.id ?? "new"}`} onSubmit={submit}>
@@ -173,6 +184,15 @@ export default function PackingPage({ onShowTrips }) {
           </ul>
         </details>
       ))}
+      {editing && (
+        <details className="packing-group">
+          <summary>清單還原</summary>
+          <p className="packing-empty">還原後會重新載入預設範本，並清除這個瀏覽器的自訂內容與打包勾選。</p>
+          <div className="packing-actions packing-group-actions">
+            <button type="button" className="view-switch" onClick={restoreDefaults} disabled={busy}>還原預設清單</button>
+          </div>
+        </details>
+      )}
     </main>
   );
 }
