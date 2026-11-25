@@ -1,6 +1,7 @@
 import { fetchNotionResults, NotionRequestError } from "./notion.js";
 
 const ownerProperty = "網站建立者 ID";
+const memberAccountProperty = "分帳帳號 ID";
 const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const notionBase = "https://api.notion.com/v1";
 
@@ -148,11 +149,21 @@ export function createExpenseHandler({ getUser, env, notionFetch = fetch, queryR
 
       if (request.method === "GET") {
         const [members, rows] = await Promise.all([query(membersId), query(expensesId)]);
+        const isAdmin = user.roles.includes("expense-admin");
+        const linked = members.filter(row => plainText(row.properties[memberAccountProperty]?.rich_text) === user.id);
+        // The original Allen roster entry predates account links created by invitations.
+        const adminEmails = (env("EXPENSE_ADMIN_EMAILS") || "").trim().split(/[\s,]+/).filter(Boolean);
+        const legacyAdmin = linked.length === 0 && isAdmin && adminEmails.length === 1
+          ? members.filter(row => toMember(row).name.trim() === "Allen" &&
+              !plainText(row.properties[memberAccountProperty]?.rich_text))
+          : [];
+        const matches = linked.length ? linked : legacyAdmin;
         return json({
           members: members.map(toMember),
           expenses: rows.map(row => toExpense(row, user)).sort((a, b) =>
             b.date.localeCompare(a.date) || (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "")),
-          isAdmin: !!user.roles.includes("expense-admin")
+          currentMemberId: matches.length === 1 ? matches[0].id : "",
+          isAdmin
         });
       }
 

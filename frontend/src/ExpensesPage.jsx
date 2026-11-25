@@ -7,8 +7,8 @@ import { inviteRequest } from "./expenseInviteRequest.js";
 const endpoint = "/.netlify/functions/expenses";
 const exchangeRateKey = "nozawa-2027-expense-exchange-rate";
 const participantIds = members => members.map(member => member.id);
-const newExpense = (members = []) => ({
-  title: "", date: "", amount: "", currency: "JPY", payerId: "", participantIds: participantIds(members)
+const newExpense = ({ members = [], currentMemberId = "" } = {}) => ({
+  title: "", date: "", amount: "", currency: "JPY", payerId: currentMemberId, participantIds: participantIds(members)
 });
 
 function readExchangeRate() {
@@ -46,6 +46,7 @@ export default function ExpensesPage({ onShowTrips }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -56,7 +57,7 @@ export default function ExpensesPage({ onShowTrips }) {
         const result = await expenseRequest({ signal: controller.signal });
         if (active) {
           setData(result);
-          setDraft(newExpense(result.members));
+          setDraft(newExpense(result));
           setMode("ledger");
         }
       } catch (failure) {
@@ -93,8 +94,47 @@ export default function ExpensesPage({ onShowTrips }) {
     };
   }, []);
 
+  async function refreshLedger() {
+    if (busy || refreshing) return;
+    setRefreshing(true);
+    setError("");
+    setNotice("");
+    try {
+      const latest = await expenseRequest();
+      const latestIds = participantIds(latest.members);
+      setData(latest);
+      setMode("ledger");
+      setDraft(current => {
+        if (current.id) return current;
+        const previousIds = participantIds(data?.members ?? []);
+        const selectedAll = previousIds.length === current.participantIds.length &&
+          previousIds.every(id => current.participantIds.includes(id));
+        return {
+          ...current,
+          payerId: latestIds.includes(current.payerId) ? current.payerId : latest.currentMemberId ?? "",
+          participantIds: selectedAll ? latestIds : current.participantIds.filter(id => latestIds.includes(id))
+        };
+      });
+      const editing = draft.id && latest.expenses.find(item => item.id === draft.id);
+      if (draft.id && editing?.updatedAt !== draft.updatedAt) {
+        setNotice(editing ? "帳本已更新。這筆支出已變更，請從明細重新點「編輯」。" : "帳本已更新。正在編輯的支出已移除。");
+      } else {
+        setNotice("帳本已更新。");
+      }
+    } catch (failure) {
+      setError(failure.message);
+      if ([401, 403].includes(failure.status)) {
+        setData(null);
+        setMode("login");
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   async function saveExpense(event) {
     event.preventDefault();
+    if (busy || refreshing || staleDraft) return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -104,12 +144,12 @@ export default function ExpensesPage({ onShowTrips }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...draft, amount: Number(draft.amount) })
       });
-      setDraft(newExpense(data.members));
+      setDraft(newExpense(data));
       setNotice("支出已儲存。");
       try {
         const latest = await expenseRequest();
         setData(latest);
-        setDraft(newExpense(latest.members));
+        setDraft(newExpense(latest));
       } catch {
         setNotice("支出已儲存。重新整理頁面即可查看最新明細。");
       }
@@ -125,7 +165,7 @@ export default function ExpensesPage({ onShowTrips }) {
   }
 
   async function deleteExpense(expense) {
-    if (busy || !window.confirm(`確定刪除「${expense.title || "這筆支出"}」？刪除後會重新計算分帳。`)) return;
+    if (busy || refreshing || !window.confirm(`確定刪除「${expense.title || "這筆支出"}」？刪除後會重新計算分帳。`)) return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -136,7 +176,7 @@ export default function ExpensesPage({ onShowTrips }) {
         body: JSON.stringify({ id: expense.id, updatedAt: expense.updatedAt })
       });
       setData(current => ({ ...current, expenses: current.expenses.filter(item => item.id !== expense.id) }));
-      setDraft(current => current.id === expense.id ? newExpense(data.members) : current);
+      setDraft(current => current.id === expense.id ? newExpense(data) : current);
       setNotice("支出已刪除。");
     } catch (failure) {
       setError(failure.message);
@@ -152,6 +192,8 @@ export default function ExpensesPage({ onShowTrips }) {
   const update = (property, value) => setDraft(current => ({ ...current, [property]: value }));
   const memberNames = new Map((data?.members ?? []).map(member => [member.id, member.name]));
   const hasRoster = !!data?.members.length;
+  const staleDraft = Boolean(draft.id && !data?.expenses.some(item => item.id === draft.id &&
+    item.updatedAt === draft.updatedAt && item.canEdit));
   const settlement = data && settleExpenses(data.members, data.expenses);
   const combined = settlement && settleInTwd(settlement, exchangeRate);
   const settlements = combined ? [["TWD", "全用台幣結算", combined]] : [
@@ -166,6 +208,8 @@ export default function ExpensesPage({ onShowTrips }) {
         <div><h1>野澤滑雪分帳</h1></div>
         <div className="expense-actions">
           <button type="button" className="view-switch" onClick={onShowTrips}>返回行程</button>
+          {(mode === "ledger" || mode === "unavailable") && <button type="button" className="view-switch"
+            disabled={busy || refreshing} onClick={() => void refreshLedger()}>{refreshing ? "重新整理中…" : "重新整理"}</button>}
           {mode === "ledger" && <a className="view-switch" href={signOutUrl}>登出</a>}
         </div>
       </header>
@@ -218,10 +262,10 @@ export default function ExpensesPage({ onShowTrips }) {
                 ))}
               </fieldset>
               <div className="expense-actions">
-                <button type="submit" className="expense-primary" disabled={busy || !hasRoster || !draft.participantIds.length}>
+                <button type="submit" className="expense-primary" disabled={busy || refreshing || staleDraft || !hasRoster || !draft.participantIds.length}>
                   {busy ? "處理中…" : "儲存支出"}
                 </button>
-                {draft.id && <button type="button" className="view-switch" disabled={busy} onClick={() => setDraft(newExpense(data.members))}>取消編輯</button>}
+                {draft.id && <button type="button" className="view-switch" disabled={busy || refreshing} onClick={() => setDraft(newExpense(data))}>取消編輯</button>}
               </div>
             </form>
             <section className="expense-panel">
@@ -269,13 +313,13 @@ export default function ExpensesPage({ onShowTrips }) {
                 {!!expense.participantIds.length && <span>分攤 {expense.participantIds.map(id => memberNames.get(id)).filter(Boolean).join("、")}</span>}
                 {expense.status && expense.status !== "可結算" && <span>{expense.status}</span>}
                 {expense.canEdit && <div className="expense-actions">
-                  <button type="button" className="view-switch" disabled={busy} onClick={() => {
+                  <button type="button" className="view-switch" disabled={busy || refreshing} onClick={() => {
                     setDraft(expense);
                     setError("");
                     setNotice("");
                     document.getElementById("expense-form").scrollIntoView();
                   }}>編輯</button>
-                  <button type="button" className="view-switch" disabled={busy} onClick={() => void deleteExpense(expense)}>刪除</button>
+                  <button type="button" className="view-switch" disabled={busy || refreshing} onClick={() => void deleteExpense(expense)}>刪除</button>
                 </div>}
               </li>
             ))}</ul>

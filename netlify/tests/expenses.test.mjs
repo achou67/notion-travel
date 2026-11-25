@@ -12,7 +12,10 @@ const origin = "https://example.test";
 const input = { title: "團體晚餐", amount: 1500, currency: "JPY", date: "", payerId, participantIds: [payerId] };
 const user = { id: "member-1", roles: ["expense-member"] };
 
-function handlerFixture({ identity = user, owner = user.id, sourceId = expensesId, queryError, trashed = false } = {}) {
+function handlerFixture({
+  identity = user, owner = user.id, sourceId = expensesId, queryError, trashed = false,
+  roster = [{ id: payerId }], adminEmails
+} = {}) {
   const calls = [];
   const page = {
     id: expenseId, last_edited_time: updatedAt, in_trash: trashed,
@@ -22,14 +25,19 @@ function handlerFixture({ identity = user, owner = user.id, sourceId = expensesI
   const handler = createExpenseHandler({
     getUser: async () => identity,
     env: key => ({
-      EXPENSE_NOTION_TOKEN: "test-only", EXPENSE_NOTION_EXPENSES_ID: expensesId, EXPENSE_NOTION_MEMBERS_ID: membersId
+      EXPENSE_NOTION_TOKEN: "test-only", EXPENSE_NOTION_EXPENSES_ID: expensesId,
+      EXPENSE_NOTION_MEMBERS_ID: membersId, EXPENSE_ADMIN_EMAILS: adminEmails
     })[key],
     queryResults: async url => {
       calls.push({ url, method: "QUERY" });
       if (queryError && url.includes(membersId)) throw queryError;
-      return url.includes(membersId) ? [{
-        id: payerId, parent: { type: "data_source_id", data_source_id: membersId }, properties: {}
-      }] : [page];
+      return url.includes(membersId) ? roster.map(({ id, name, account }) => ({
+        id, parent: { type: "data_source_id", data_source_id: membersId },
+        properties: {
+          "旅伴": { title: [{ plain_text: name }] },
+          "分帳帳號 ID": { rich_text: account ? [{ plain_text: account }] : [] }
+        }
+      })) : [page];
     },
     notionFetch: async (url, { method, body }) => {
       calls.push({ url, method, body: body && JSON.parse(body) });
@@ -61,6 +69,29 @@ test("private reads require an invited, authorized role and are never cached", a
   const payload = await result.json();
   assert.equal(payload.expenses[0].canEdit, true);
   assert.equal(JSON.stringify(payload).includes(user.id), false);
+});
+
+test("ledger selects the signed-in roster member without leaking account IDs", async () => {
+  const admin = { id: "admin-account", roles: ["expense-admin"] };
+  const roster = [
+    { id: "allen", name: "Allen" },
+    { id: payerId, name: "Allen2", account: user.id }
+  ];
+  const adminEmails = "admin@example.test";
+  for (const [options, expected] of [
+    [{ roster }, payerId],
+    [{ roster, identity: { id: "unlinked", roles: ["expense-member"] } }, ""],
+    [{ roster, adminEmails, identity: admin }, "allen"],
+    [{ roster: roster.slice(1), adminEmails, identity: admin }, ""],
+    [{ roster, adminEmails: adminEmails + ", another@example.test", identity: admin }, ""],
+    [{ roster: [...roster, { id: "duplicate", name: "Allen", account: user.id }] }, ""],
+    [{ roster: [...roster, { id: "renamed", name: "Host", account: admin.id }], adminEmails, identity: admin }, "renamed"]
+  ]) {
+    const { handler } = handlerFixture(options);
+    const payload = await (await handler(request())).json();
+    assert.equal(payload.currentMemberId, expected);
+    assert.ok(payload.members.every(member => Object.keys(member).sort().join(",") === "id,name"));
+  }
 });
 
 test("creation derives ownership from the session and rejects invalid inputs and cross-origin writes", async () => {
