@@ -1,9 +1,9 @@
-const CACHE_NAME = "notion-travel-shell-v2";
+const CACHE_NAME = "notion-travel-shell-v3";
 const APP_SHELL = [
   "/",
-  "/manifest.webmanifest",
-  "/pwa-icon-192.png",
-  "/pwa-icon-512.png"
+  "/manifest.webmanifest?v=nozawa-1",
+  "/pwa-icon-192.png?v=nozawa-1",
+  "/pwa-icon-512.png?v=nozawa-1"
 ];
 
 self.addEventListener("install", event => {
