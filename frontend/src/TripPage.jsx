@@ -283,7 +283,7 @@ function TripPage({ onShowShopping, onShowPacking, snapshot = null, onLoadFailur
           <button type="button" className="view-switch" onClick={onShowPacking}>
             🧳 行李清單
           </button>
-          <a className="view-switch" href="https://app.lightsplit.com/" target="_blank" rel="noopener noreferrer">分帳</a>
+          <a className="view-switch" href="https://liff.line.me/1655320992-Y8GowEpw/g/hXX6empJs33gzNymz2djfB" target="_blank" rel="noopener noreferrer">分帳</a>
         </div>
       </header>
 
