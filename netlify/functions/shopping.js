@@ -27,8 +27,8 @@ export function isPendingShoppingItem(item) {
 
 export default async () => {
   try {
-    const databaseId = Netlify.env.get("NOTION_SHOPPINGLIST_DATABASE_ID");
-    const token = Netlify.env.get("NOTION_TOKEN");
+    const databaseId = process.env.NOTION_SHOPPINGLIST_DATABASE_ID;
+    const token = process.env.NOTION_TOKEN;
 
     if (!databaseId) {
       return new Response(null, {

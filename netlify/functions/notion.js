@@ -25,8 +25,8 @@ export function transformNotionItem(item = {}) {
 
 export default async () => {
   try {
-    const databaseId = Netlify.env.get("NOTION_DATABASE_ID");
-    const token = Netlify.env.get("NOTION_TOKEN");
+    const databaseId = process.env.NOTION_DATABASE_ID;
+    const token = process.env.NOTION_TOKEN;
 
     if (!databaseId || !token) {
       throw new Error("Notion 環境變數尚未設定");

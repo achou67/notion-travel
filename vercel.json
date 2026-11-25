@@ -1,0 +1,29 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "npm --prefix frontend ci",
+  "buildCommand": "npm --prefix frontend run build",
+  "outputDirectory": "frontend/dist",
+  "rewrites": [
+    {
+      "source": "/.netlify/functions/notion",
+      "destination": "/api/notion"
+    },
+    {
+      "source": "/.netlify/functions/page",
+      "destination": "/api/page"
+    },
+    {
+      "source": "/.netlify/functions/shopping",
+      "destination": "/api/shopping"
+    },
+    {
+      "source": "/shopping",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:day([0-9]{4}-[0-9]{2}-[0-9]{2})",
+      "destination": "/index.html"
+    }
+  ]
+}
