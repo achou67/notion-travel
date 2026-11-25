@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
 import "./ExpensesPage.css";
-import { settleExpenses } from "./expenseSettlement.js";
+import { settleExpenses, settleInTwd } from "./expenseSettlement.js";
 import { ExpenseInvite } from "./ExpenseInvite.jsx";
 import { inviteRequest } from "./expenseInviteRequest.js";
 
 const endpoint = "/.netlify/functions/expenses";
-const newExpense = () => ({
-  title: "", date: "", amount: "", currency: "JPY", payerId: "", participantIds: []
+const exchangeRateKey = "nozawa-2027-expense-exchange-rate";
+const participantIds = members => members.map(member => member.id);
+const newExpense = (members = []) => ({
+  title: "", date: "", amount: "", currency: "JPY", payerId: "", participantIds: participantIds(members)
 });
+
+function readExchangeRate() {
+  try { return window.localStorage.getItem(exchangeRateKey) || ""; } catch { return ""; }
+}
 
 async function expenseRequest(options = {}) {
   const response = await fetch(endpoint, { cache: "no-store", ...options });
@@ -35,7 +41,8 @@ export default function ExpensesPage({ onShowTrips }) {
   const [data, setData] = useState(null);
   const [mode, setMode] = useState("loading");
   const [inviteToken] = useState(() => new URLSearchParams(window.location.hash.slice(1)).get("invite") || "");
-  const [draft, setDraft] = useState(newExpense);
+  const [draft, setDraft] = useState(() => newExpense());
+  const [exchangeRate, setExchangeRate] = useState(readExchangeRate);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -49,6 +56,7 @@ export default function ExpensesPage({ onShowTrips }) {
         const result = await expenseRequest({ signal: controller.signal });
         if (active) {
           setData(result);
+          setDraft(newExpense(result.members));
           setMode("ledger");
         }
       } catch (failure) {
@@ -96,10 +104,12 @@ export default function ExpensesPage({ onShowTrips }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...draft, amount: Number(draft.amount) })
       });
-      setDraft(newExpense());
+      setDraft(newExpense(data.members));
       setNotice("支出已儲存。");
       try {
-        setData(await expenseRequest());
+        const latest = await expenseRequest();
+        setData(latest);
+        setDraft(newExpense(latest.members));
       } catch {
         setNotice("支出已儲存。重新整理頁面即可查看最新明細。");
       }
@@ -118,6 +128,10 @@ export default function ExpensesPage({ onShowTrips }) {
   const memberNames = new Map((data?.members ?? []).map(member => [member.id, member.name]));
   const hasRoster = !!data?.members.length;
   const settlement = data && settleExpenses(data.members, data.expenses);
+  const combined = settlement && settleInTwd(settlement, exchangeRate);
+  const settlements = combined ? [["TWD", "全用台幣結算", combined]] : [
+    ["JPY", "日圓結算", settlement?.JPY], ["TWD", "台幣結算", settlement?.TWD]
+  ];
   const signInUrl = "/api/auth/signin?callbackUrl=%2Fexpenses";
   const signOutUrl = "/api/auth/signout?callbackUrl=%2Fexpenses";
 
@@ -166,6 +180,8 @@ export default function ExpensesPage({ onShowTrips }) {
               </select></label>
               <fieldset>
                 <legend>分攤人（平分）</legend>
+                {hasRoster && <button type="button" className="view-switch" disabled={busy || draft.participantIds.length === data.members.length}
+                  onClick={() => update("participantIds", participantIds(data.members))}>勾選全部人</button>}
                 {data.members.map(member => (
                   <label key={member.id} className="expense-checkbox">
                     <input type="checkbox" checked={draft.participantIds.includes(member.id)}
@@ -180,21 +196,36 @@ export default function ExpensesPage({ onShowTrips }) {
                 <button type="submit" className="expense-primary" disabled={busy || !hasRoster || !draft.participantIds.length}>
                   {busy ? "處理中…" : "儲存支出"}
                 </button>
-                {draft.id && <button type="button" className="view-switch" disabled={busy} onClick={() => setDraft(newExpense())}>取消編輯</button>}
+                {draft.id && <button type="button" className="view-switch" disabled={busy} onClick={() => setDraft(newExpense(data.members))}>取消編輯</button>}
               </div>
             </form>
             <section className="expense-panel">
               <h2>旅伴與結算</h2>
               {!hasRoster && <p>目前還沒有旅伴。</p>}
               {settlement.excluded > 0 && <p>有 {settlement.excluded} 筆支出缺少有效資料，已暫時排除。</p>}
+              <div className="expense-rate expense-form">
+                <label>匯率（1 日圓折合多少台幣）
+                  <input type="text" inputMode="decimal" maxLength={11} placeholder="例如 0.22" value={exchangeRate}
+                    aria-describedby="expense-rate-help" aria-invalid={Boolean(exchangeRate.trim() && !combined)}
+                    onChange={event => {
+                      const value = event.target.value;
+                      setExchangeRate(value);
+                      try { window.localStorage.setItem(exchangeRateKey, value); } catch { /* In-memory rate still works. */ }
+                    }} />
+                </label>
+                <p id="expense-rate-help">輸入匯率後，以台幣合併結算。清空即可切回分幣別結算。</p>
+                {exchangeRate.trim() && !combined && <p className="expense-error" role="alert">請輸入大於 0 的匯率，最多六位小數。</p>}
+              </div>
               <ul className="expense-rows">{data.members.map(member => (
-                <li key={member.id}><strong>{member.name}</strong><span>{balanceLabel(settlement.JPY.balances.get(member.id), "JPY")} · {balanceLabel(settlement.TWD.balances.get(member.id), "TWD")}</span></li>
+                <li key={member.id}><strong>{member.name}</strong><span>{combined
+                  ? balanceLabel(combined.balances.get(member.id), "TWD")
+                  : `${balanceLabel(settlement.JPY.balances.get(member.id), "JPY")} · ${balanceLabel(settlement.TWD.balances.get(member.id), "TWD")}`}</span></li>
               ))}</ul>
-              {["JPY", "TWD"].map(currency => (
+              {settlements.map(([currency, title, { transfers }]) => (
                 <div key={currency}>
-                  <h3>{currency === "JPY" ? "日圓結算" : "台幣結算"}</h3>
-                  {settlement[currency].transfers.length ? (
-                    <ul className="expense-rows">{settlement[currency].transfers.map(({ from, to, amount }) => (
+                  <h3>{title}</h3>
+                  {transfers.length ? (
+                    <ul className="expense-rows">{transfers.map(({ from, to, amount }) => (
                       <li key={from + "/" + to}><strong>{memberNames.get(from)} → {memberNames.get(to)}</strong><span>{formatMoney(amount, currency)}</span></li>
                     ))}</ul>
                   ) : <p>目前沒有需要轉帳的金額。</p>}

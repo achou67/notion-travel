@@ -51,3 +51,13 @@
   border-radius: 8px;
   font: inherit;
 }
+
+.expense-rate {
+  gap: 6px;
+  margin: 12px 0;
+}
+.expense-rate input {
+  max-width: 240px;
+  font: inherit;
+  font-size: 16px;
+}
