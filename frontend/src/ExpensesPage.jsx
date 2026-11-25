@@ -218,10 +218,18 @@ export default function ExpensesPage({ onShowTrips }) {
       {error && <p className="expense-error" role="alert">{error}</p>}
       {notice && <p className="expense-message" role="status">{notice}</p>}
 
+      {!inviteToken && mode !== "join" && (
+        <section className="expense-panel expense-invite" aria-labelledby="lightsplit-title">
+          <h2 id="lightsplit-title">試用 Lightsplit 分帳</h2>
+          <p>首次加入請用旅伴 LINE 群組裡的邀請。加入後可用同一個 LINE 帳號開啟帳本。</p>
+          <a className="expense-primary" href="https://app.lightsplit.com/" target="_blank" rel="noopener noreferrer">開啟 Lightsplit</a>
+        </section>
+      )}
+
       {mode === "login" && (inviteToken
         ? <ExpenseInvite mode="start" token={inviteToken} signInUrl={signInUrl} />
         : <section className="expense-panel">
-          <h2>旅伴登入</h2>
+          <h2>原有帳本登入</h2>
           <p>請使用受邀的 Google 帳號查看帳本或新增支出。</p>
           <a className="expense-primary" href={signInUrl}>使用 Google 登入</a>
         </section>)}
