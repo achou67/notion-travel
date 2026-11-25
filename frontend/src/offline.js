@@ -85,7 +85,7 @@ export async function saveSnapshot(onProgress) {
     if (!shell.ok || !shell.headers.get("content-type")?.includes("text/html")) throw new Error("網頁下載失敗");
     const html = new DOMParser().parseFromString(await shell.clone().text(), "text/html");
     await cache.put("/", shell);
-    const assets = new Set(["/manifest.webmanifest?v=nozawa-3", "/pwa-icon-192.png?v=nozawa-3", "/pwa-icon-512.png?v=nozawa-3"]);
+    const assets = new Set(["/manifest.webmanifest?v=nozawa-4", "/pwa-icon-192.png?v=nozawa-4", "/pwa-icon-512.png?v=nozawa-4"]);
     for (const element of html.querySelectorAll("script[src], link[rel=stylesheet], link[rel=modulepreload]")) {
       const url = new URL(element.getAttribute("src") || element.getAttribute("href"), location.origin);
       if (url.origin !== location.origin) throw new Error("網頁使用外部程式資源，無法完整保存。");
