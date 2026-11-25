@@ -1,51 +1,109 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { defaultPackingList, editPackingItem, packingKey, readPackingList, savePackingList } from "./packingStorage.js";
 import "./PackingPage.css";
 
-const groups = [
-  ["旅行證件", ["護照", "錢包（日圓、信用卡）", "航班與交通票券", "住宿確認", "旅遊保險資料"]],
-  ["隨身物品", ["雨傘", "太陽眼鏡", "帽子", "口罩", "面紙", "防曬外套", "頸枕"]],
-  ["衣服與鞋子", ["衣服", "內衣", "內褲", "襪子", "睡衣", "褲子", "裙子", "外套", "壓縮袋", "拖鞋", "涼鞋（選帶）"]],
-  ["保養品", ["防曬", "化妝品", "保養品", "止汗劑", "身體乳液", "梳子"]],
-  ["盥洗用品", ["刮鬍刀", "包髮巾", "洗臉機", "電動牙刷", "牙膏", "卸妝油", "卸妝棉", "棉花棒", "洗面乳", "護髮乳", "毛巾", "電臉棒", "洗衣精", "洗衣袋", "指甲剪", "修眉用品"]],
-  ["電器與充電", ["吹風機", "離子夾", "手錶充電器", "手機充電器", "360 相機和充電器", "行動電源", "萬國插頭", "平板"]],
-  ["藥品", ["止痛藥", "感冒藥", "腸胃藥", "過敏藥", "維他命、鈣", "中藥"]],
-  ["行李配件", ["行李秤"]],
-  ["雪具與雪衣", ["雪板", "雪鞋", "固定器", "雪板袋", "安全帽", "雪鏡", "滑雪手套", "護具", "雪襪", "內搭褲", "運動內衣", "運動服", "羽絨背心", "雪衣", "雪褲", "護臉"]],
-];
-const total = groups.reduce((sum, [, items]) => sum + items.length, 0);
-const storageKey = "nozawa-2027-packing";
-
-function itemKey(category, item) {
-  return `${category}/${item}`;
-}
-
-function readPackedItems() {
+function loadList() {
   try {
-    const saved = JSON.parse(window.localStorage.getItem(storageKey));
-    return new Set(Array.isArray(saved) ? saved : []);
+    return { groups: readPackingList(window.localStorage), error: "" };
   } catch {
-    return new Set();
+    return { groups: defaultPackingList(), error: "無法讀取此瀏覽器的行李清單，目前顯示預設範本。" };
   }
 }
 
 export default function PackingPage({ onShowTrips }) {
-  const [packed, setPacked] = useState(readPackedItems);
-  const [storageError, setStorageError] = useState(false);
-  const packedCount = groups.reduce((count, [category, items]) =>
-    count + items.filter(item => packed.has(itemKey(category, item))).length, 0);
+  const [{ groups, error }, setList] = useState(loadList);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const items = groups.flatMap(group => group.items);
+  const packedCount = items.filter(item => item.checked).length;
 
-  function toggleItem(key, checked) {
-    const next = new Set(packed);
-    if (checked) next.add(key);
-    else next.delete(key);
-
-    setPacked(next);
-    try {
-      window.localStorage.setItem(storageKey, JSON.stringify([...next]));
-      setStorageError(false);
-    } catch {
-      setStorageError(true);
+  useEffect(() => {
+    function syncStorage(event) {
+      if (event.key === packingKey || event.key === null) setList(loadList());
     }
+    window.addEventListener("storage", syncStorage);
+    return () => window.removeEventListener("storage", syncStorage);
+  }, []);
+
+  async function save(update) {
+    try {
+      const write = () => savePackingList(window.localStorage, update);
+      const next = navigator.locks ? await navigator.locks.request(packingKey, write) : write();
+      setList({ groups: next, error: "" });
+      return true;
+    } catch {
+      setList({ ...loadList(), error: "無法儲存修改。請確認瀏覽器允許儲存網站資料，再試一次。" });
+      return false;
+    }
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    const fields = new FormData(event.currentTarget);
+    const name = fields.get("name").trim();
+    if (!name) {
+      const input = event.currentTarget.elements.namedItem("name");
+      input.setCustomValidity("請輸入名稱");
+      input.reportValidity();
+      return;
+    }
+
+    setBusy(true);
+    const id = crypto.randomUUID();
+    const saved = await save(current => {
+      if (form.type === "item") {
+        return editPackingItem(current, form.groupId, fields.get("category") || form.groupId, form.id, name, id);
+      }
+      return form.id
+        ? current.map(group => group.id === form.id ? { ...group, name } : group)
+        : [...current, { id, name, items: [] }];
+    });
+    setBusy(false);
+    if (saved) setForm(null);
+  }
+
+  function toggle(groupId, itemId, checked) {
+    const update = current => current.map(group => group.id === groupId
+      ? { ...group, items: group.items.map(item => item.id === itemId ? { ...item, checked } : item) }
+      : group);
+    setList(current => ({ ...current, groups: update(current.groups) }));
+    void save(update);
+  }
+
+  function removeItem(groupId, itemId) {
+    void save(current => current.map(group => group.id === groupId
+      ? { ...group, items: group.items.filter(item => item.id !== itemId) }
+      : group));
+    if (form?.id === itemId) setForm(null);
+  }
+
+  function removeGroup(group) {
+    if (!window.confirm(`刪除「${group.name}」和其中的 ${group.items.length} 個項目？`)) return;
+    void save(current => current.filter(item => item.id !== group.id));
+    if (form?.id === group.id || form?.groupId === group.id) setForm(null);
+  }
+
+  function renderForm() {
+    return (
+      <form className="packing-edit-form" key={`${form.type}-${form.groupId ?? ""}-${form.id ?? "new"}`} onSubmit={submit}>
+        <label>
+          {form.type === "item" ? "物品名稱" : "分類名稱"}
+          <input name="name" defaultValue={form.name ?? ""} required maxLength={100} autoFocus
+            onInput={event => event.currentTarget.setCustomValidity("")} />
+        </label>
+        {form.type === "item" && form.id && <label>
+          所屬分類
+          <select name="category" defaultValue={form.groupId}>
+            {groups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}
+          </select>
+        </label>}
+        <div className="packing-actions">
+          <button type="button" className="view-switch" onClick={() => setForm(null)} disabled={busy}>取消</button>
+          <button type="submit" className="view-switch" disabled={busy}>儲存</button>
+        </div>
+      </form>
+    );
   }
 
   return (
@@ -53,36 +111,65 @@ export default function PackingPage({ onShowTrips }) {
       <header className="hero packing-hero">
         <div>
           <h1>行李清單</h1>
-          <p className="subtitle">勾選進度儲存在此瀏覽器。</p>
+          <p className="subtitle">清單與打包進度儲存在此瀏覽器。</p>
         </div>
         <button type="button" className="view-switch" onClick={onShowTrips}>返回行程</button>
       </header>
 
       <div className="packing-progress">
-        <p role="status">已打包 {packedCount}／{total} 項</p>
-        <progress aria-label="打包進度" value={packedCount} max={total} />
-        {storageError && <p role="alert">瀏覽器無法儲存，重新開啟清單後，這次的勾選可能會消失。</p>}
+        <p role="status">已打包 {packedCount}／{items.length} 項</p>
+        <progress aria-label="打包進度" value={packedCount} max={Math.max(items.length, 1)} />
+        {error && <p role="alert">{error}</p>}
       </div>
 
-      {groups.map(([category, items]) => (
-        <details className="packing-group" key={category}>
+      <div className="packing-actions packing-toolbar">
+        <button type="button" className="view-switch" disabled={busy}
+          onClick={() => { setEditing(!editing); setForm(null); }}>
+          {editing ? "完成編輯" : "編輯清單"}
+        </button>
+        {editing && <button type="button" className="view-switch" disabled={busy}
+          onClick={() => setForm({ type: "group" })}>新增分類</button>}
+      </div>
+
+      {form?.type === "group" && !form.id && renderForm()}
+      {!groups.length && <p className="state-card">行李清單目前沒有分類。</p>}
+      {groups.map(group => (
+        <details className="packing-group" key={group.id}>
           <summary>
-            {category}
-            <span>{items.filter(item => packed.has(itemKey(category, item))).length}／{items.length}</span>
+            {group.name}
+            <span>{group.items.filter(item => item.checked).length}／{group.items.length}</span>
           </summary>
+          {editing && (
+            <div className="packing-actions packing-group-actions">
+              <button type="button" className="view-switch" disabled={busy}
+                onClick={() => setForm({ type: "item", groupId: group.id })}>新增物品</button>
+              <button type="button" className="view-switch" disabled={busy}
+                onClick={() => setForm({ type: "group", id: group.id, name: group.name })}>改分類名稱</button>
+              <button type="button" className="view-switch" disabled={busy}
+                onClick={() => removeGroup(group)}>刪除分類</button>
+            </div>
+          )}
+          {form?.type === "group" && form.id === group.id && renderForm()}
+          {form?.type === "item" && form.groupId === group.id && renderForm()}
+          {!group.items.length && <p className="packing-empty">這個分類目前沒有物品。</p>}
           <ul>
-            {items.map(item => {
-              const key = itemKey(category, item);
-              return (
-                <li key={key}>
-                  <label>
-                    <input type="checkbox" checked={packed.has(key)}
-                      onChange={event => toggleItem(key, event.target.checked)} />
-                    <span>{item}</span>
-                  </label>
-                </li>
-              );
-            })}
+            {group.items.map(item => (
+              <li className="packing-item" key={item.id}>
+                <label className="packing-item-label">
+                  <input type="checkbox" checked={item.checked}
+                    onChange={event => toggle(group.id, item.id, event.target.checked)} />
+                  <span>{item.name}</span>
+                </label>
+                {editing && (
+                  <div className="packing-actions">
+                    <button type="button" className="view-switch" aria-label={`編輯 ${item.name}`} disabled={busy}
+                      onClick={() => setForm({ type: "item", groupId: group.id, id: item.id, name: item.name })}>編輯</button>
+                    <button type="button" className="view-switch" aria-label={`刪除 ${item.name}`} disabled={busy}
+                      onClick={() => removeItem(group.id, item.id)}>刪除</button>
+                  </div>
+                )}
+              </li>
+            ))}
           </ul>
         </details>
       ))}

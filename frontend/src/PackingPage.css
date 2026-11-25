@@ -52,18 +52,94 @@
   padding: 0 16px 12px;
 }
 
-.packing-group label {
+.packing-item-label {
   display: flex;
   align-items: center;
   gap: 12px;
   min-height: 44px;
-  border-top: 1px solid #f4e8ee;
   cursor: pointer;
 }
 
-.packing-group input {
+.packing-item-label input {
   width: 20px;
   height: 20px;
   margin: 0;
   accent-color: #a3496b;
+}
+
+.packing-toolbar {
+  margin: 0 0 12px;
+}
+
+.packing-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.packing-actions button {
+  min-height: 44px;
+}
+
+.packing-group-actions,
+.packing-empty {
+  margin: 0;
+  padding: 0 16px 12px;
+}
+
+.packing-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #f4e8ee;
+}
+
+.packing-item-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.packing-item-label input,
+.packing-item .packing-actions {
+  flex-shrink: 0;
+}
+
+.packing-item .packing-actions {
+  flex-wrap: nowrap;
+}
+
+.packing-edit-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border: 1px solid #efdbe4;
+  border-radius: 14px;
+  background: #fff8fb;
+}
+
+.packing-group .packing-edit-form {
+  margin-inline: 16px;
+}
+
+.packing-edit-form label {
+  display: grid;
+  gap: 5px;
+  font-weight: 650;
+}
+
+.packing-edit-form :is(input, select) {
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #d5bcc8;
+  border-radius: 9px;
+  background: white;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
 }
