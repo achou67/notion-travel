@@ -10,7 +10,6 @@ async function check() {
   let failApi = false;
   let failNote = false;
   let failImage = false;
-  let shoppingEnabled = true;
   let workerVersion = 0;
   const requests = [];
   const imageServer = http.createServer((req, res) => {
@@ -33,10 +32,7 @@ async function check() {
         res.writeHead(500); res.end('{}'); return;
       }
       if (url.pathname.endsWith("/notion")) res.end(JSON.stringify(trips()));
-      else if (url.pathname.endsWith("/shopping")) {
-        if (!shoppingEnabled) { res.writeHead(204); res.end(); return; }
-        res.end(JSON.stringify([{ id: "s", name: `Shopping v${version}`, description: "Buy this", storeType: "日用品" }]));
-      } else res.end(JSON.stringify({ content: [
+      else res.end(JSON.stringify({ content: [
         { type: "paragraph", text: `Note ${url.searchParams.get("id")} v${version}` },
         { type: "image", url: imageUrl, caption: "Saved image" }
       ] }));
@@ -120,16 +116,31 @@ async function check() {
     await page.getByRole("button", { name: "Trip a v1", exact: true }).click();
     await page.getByText("Note a v1", { exact: true }).waitFor();
     await page.getByRole("button", { name: /購物清單/ }).click();
-    await page.getByRole("button", { name: /Shopping v1/ }).waitFor();
+    await page.getByRole("button", { name: "新增商品", exact: true }).click();
+    await page.getByLabel("商品名稱").fill("雪襪");
+    await page.getByLabel("店家（選填）").fill("滑雪用品店");
+    await page.getByLabel("數量（選填）").fill("2");
+    await page.getByLabel("預算 JPY（選填）").fill("2000");
+    await page.getByLabel("備註（選填）").fill("買深色");
+    await page.getByRole("button", { name: "儲存商品" }).click();
     await page.reload();
-    await page.getByRole("button", { name: /Shopping v1/ }).click();
-    await page.getByText("Buy this", { exact: true }).waitFor();
+    await page.getByText("滑雪用品店", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "編輯 雪襪" }).click();
+    await page.getByLabel("商品名稱").fill("厚雪襪");
+    await page.getByRole("button", { name: "儲存商品" }).click();
+    await page.getByRole("checkbox", { name: "已買 厚雪襪" }).check();
+    await page.getByRole("button", { name: "已買 (1)", exact: true }).click();
+    await page.getByRole("checkbox", { name: "已買 厚雪襪" }).uncheck();
+    await page.getByRole("button", { name: "待買 (1)", exact: true }).click();
+    await page.getByText("買深色", { exact: true }).waitFor();
+    assert.ok(!requests.some(url => url.includes("/shopping")), "Personal shopping must not call any shopping API");
 
     version = 2;
     await context.setOffline(false);
     // New Chromium pages can report onLine=true during network emulation; exercise the browser event explicitly.
     await page.evaluate(() => window.dispatchEvent(new Event("online")));
-    await page.getByRole("button", { name: /Shopping v2/ }).waitFor();
+    await page.getByRole("button", { name: "返回行程", exact: true }).click();
+    await page.getByRole("button", { name: "Trip a v2", exact: true }).waitFor();
     assert.equal(await page.getByText("目前使用離線版本", { exact: true }).count(), 0);
     assert.equal((await readSaved()).savedAt, first.savedAt, "Online reads must not silently replace the snapshot");
 
@@ -167,7 +178,6 @@ async function check() {
     assert.equal((await readSaved()).savedAt, first.savedAt);
     await page.evaluate(() => { Cache.prototype.put = window.originalCachePut; });
 
-    shoppingEnabled = false;
     await page.getByRole("button", { name: "更新離線版本", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "離線版本已保存" }).waitFor({ timeout: 45000 });
     const second = await readSaved();
@@ -179,7 +189,8 @@ async function check() {
     await page.getByRole("button", { name: "Trip a v2", exact: true }).click();
     await page.waitForFunction(() => document.querySelector(".content-image")?.naturalWidth > 0);
     await page.getByRole("button", { name: /購物清單/ }).click();
-    await page.getByText(/購買清單尚未啟用/).waitFor();
+    await page.getByRole("checkbox", { name: "已買 厚雪襪" }).waitFor();
+    await page.getByRole("button", { name: "返回行程", exact: true }).click();
     await openOffline();
     await page.getByRole("button", { name: "清除離線資料", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "尚未保存離線版本" }).waitFor();
@@ -188,7 +199,7 @@ async function check() {
     await page.goto(origin);
     await page.getByRole("complementary", { name: "資料連線狀態" }).getByText(/此裝置尚未保存離線版本/).waitFor();
     assert.equal(await page.getByRole("button", { name: "Trip a v2", exact: true }).count(), 0);
-    console.log("PASS: worker upgrades, cold offline start, all dates/notes, cross-origin images, shopping, online freshness, explicit HTTP-error fallback, partial/image/quota failure recovery, optional shopping and clearing");
+    console.log("PASS: worker upgrades, cold offline start, all dates/notes, cross-origin images, shopping, online freshness, explicit HTTP-error fallback, partial/image/quota failure recovery, personal shopping and clearing");
   } catch (error) {
     if (page && !page.isClosed()) console.error("Page diagnostics:", await page.evaluate(() => ({
       online: navigator.onLine, text: document.body.innerText, scripts: [...document.scripts].map(script => script.src)

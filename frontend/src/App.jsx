@@ -108,25 +108,25 @@ function App() {
 
   return (
     <>
-      {(snapshot || failed) && <aside className="offline-notice" aria-label="資料連線狀態" aria-live="polite">
+      {view !== "shopping" && (snapshot || failed) && <aside className="offline-notice" aria-label="資料連線狀態" aria-live="polite">
         <span>{snapshot ? <><strong>目前使用離線版本</strong> · {new Date(snapshot.savedAt).toLocaleString("zh-TW")}</> : saved ? "線上資料讀取失敗" : "線上資料讀取失敗，且此裝置尚未保存離線版本"}</span>
         {failed && saved && !snapshot && <button type="button" disabled={busy} onClick={() => { setSnapshot(saved); setMessage(""); }}>查看已保存版本</button>}
         <button type="button" disabled={busy} onClick={returnOnline}>重試線上資料</button>
       </aside>}
       {view === "shopping" ? (
-        <ShoppingPage key={pageKey} snapshot={snapshot} onLoadFailure={handleLoadFailure} onShowTrips={() => navigate("trips")} />
+        <ShoppingPage onShowTrips={() => navigate("trips")} />
       ) : view === "packing" ? (
         <PackingPage onShowTrips={() => navigate("trips")} />
       ) : (
         <TripPage key={pageKey} snapshot={snapshot} onLoadFailure={handleLoadFailure} onShowShopping={() => navigate("shopping")} onShowPacking={() => navigate("packing")} />
       )}
-      <details className="offline-panel">
+      {view !== "shopping" && <details className="offline-panel">
         <summary>離線使用{saved && <small>已保存</small>}</summary>
         <div className="offline-content">
           <p>連線時優先讀取線上資料；出發前可保存到此裝置，供斷網時查看。</p>
           <p>{saved
             ? `離線版本保存時間：${new Date(saved.savedAt).toLocaleString("zh-TW")}`
-            : "出發前先保存，斷網後仍可查看行程、筆記圖片與購物清單。"}</p>
+            : "出發前先保存，斷網後仍可查看行程、筆記圖片。"}</p>
           {snapshot && <p>離線內容不會自動更新；外部地圖與導航仍需網路。</p>}
           {failed && !snapshot && saved && <p>線上資料讀取失敗，可重試或查看已保存版本。</p>}
           <p role="status" aria-live="polite">{message}</p>
@@ -135,7 +135,7 @@ function App() {
             {saved && <button type="button" disabled={busy} onClick={removeDownload}>清除離線資料</button>}
           </div>
         </div>
-      </details>
+      </details>}
     </>
   );
 }

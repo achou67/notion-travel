@@ -98,8 +98,7 @@ export async function saveSnapshot(onProgress) {
     }
 
     const trips = await fetchJson(`/.netlify/functions/notion?refresh=${Date.now()}`);
-    const shopping = await fetchJson(`/.netlify/functions/shopping?refresh=${Date.now()}`);
-    if (!Array.isArray(trips) || (shopping !== null && !Array.isArray(shopping))) throw new Error("清單格式不正確");
+    if (!Array.isArray(trips)) throw new Error("清單格式不正確");
     const notes = {};
     let imageCount = 0;
     for (const [index, item] of trips.entries()) {
@@ -122,7 +121,7 @@ export async function saveSnapshot(onProgress) {
       // Space out page requests, each of which reads both page metadata and blocks from Notion.
       if (index + 1 < trips.length) await new Promise(resolve => setTimeout(resolve, 750));
     }
-    const snapshot = { savedAt: new Date().toISOString(), cacheName, trips, shopping, notes };
+    const snapshot = { savedAt: new Date().toISOString(), cacheName, trips, shopping: null, notes };
     const store = await caches.open(STORE);
     // Publish the pointer last so an interrupted download cannot replace a complete snapshot.
     await store.put(SNAPSHOT_URL, Response.json(snapshot));

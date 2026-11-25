@@ -1,4 +1,4 @@
-const CACHE_NAME = "notion-travel-shell-v5";
+const CACHE_NAME = "notion-travel-shell-v6";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest?v=nozawa-3",
